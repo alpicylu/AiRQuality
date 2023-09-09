@@ -13,8 +13,12 @@
             </nav>
         </header>
         <body>
-            <div class="flex justify-end gap-x-5 bg-gray-300 rounded-full w-10/12 h-12 mx-auto my-10">
-                <DropDownList :name="ddName" :options="dropElems"/>
+            <div class="flex flex-row justify-end items-center gap-x-5 bg-gray-300 rounded-full w-10/12 h-12 mx-auto my-10 px-10">
+                <DropDownList name="Display" :options="displayOptions" v-model:selectedOption="displayValue"/>
+                <DropDownList name="Sort By" :options="sortOptions" v-model:selectedOption="sortValue"/>
+            </div>
+            <div class="bg-red-300">
+                Test: {{ displayValue }} {{ sortValue }}
             </div>
         </body>    
     </div>
@@ -23,12 +27,21 @@
 
 <script setup>
 
-const ddName = "Display";
-
-const dropElems = ref([
-    "Option 1",
-    "Option 2",
-    "Option 3",
+const displayOptions = ref([
+    "Temperature",
+    "Rel. Humidity",
+    "CO2 Content",
 ])
+
+const sortOptions = ref([
+    "Room Ascending",
+    "Room Descending",
+    "Best First",
+    "Worst First"
+])
+
+const displayValue = ref("");
+const sortValue = ref("");
+
 
 </script>
