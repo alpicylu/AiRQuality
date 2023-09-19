@@ -6,32 +6,28 @@
 
     <div class="flex flex-col flex-auto min-h-0 w-5/6 justify-start items-center">
         <ul class="overflow-y-auto overflow-hidden h-fit w-full">
-            <li><GeneralChart/></li>
-            <li><GeneralChart/></li>
-            <li><GeneralChart/></li>
-            <li><GeneralChart/></li>
-            <li><GeneralChart/></li>
-            <li><GeneralChart/></li>
+            <li v-for="r in roomList"> <GeneralChart :room="r" :checkAllRadios="displayValue" /> </li>
         </ul>
     </div>
 </template>
 
-<script setup>
+<script setup lang="ts">
 
 const displayOptions = ref([
     "Temperature",
     "Rel. Humidity",
     "CO2 Content",
 ])
-
 const sortOptions = ref([
     "Room Ascending",
     "Room Descending",
     "Best First",
     "Worst First"
 ])
-
 const displayValue = ref("");
 const sortValue = ref("");
+
+const roomList: string[] = ["C1 234", "C1 011", "C1 201", "C2 101", "C2 201"]
+
 
 </script>
