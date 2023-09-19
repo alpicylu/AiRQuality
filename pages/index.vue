@@ -13,24 +13,58 @@
 </template>
 
 <script setup lang="ts">
+import {DisplayType, SortOptions} from '../enums/enum'
 
-//make those into enums
+function roomSort(rooms: string[], sortFun: (a: string, b: string) => number){//this function sorts the list IN PLACE
+    //use a map function to create a temporary list, whose strings have no spaces
+    //(i dont need to remove spaces)
+    //then sort the items of that list alphabetically.
+    // const tempArr: string[] = rooms.map((room: string) => {
+    //     return room.replace(/\s+/g, '')
+    // })
+    rooms.sort(sortFun)
+}
+//defined defaultSort solely because i want the rooms to be sorted on first render and i dont want
+//to repeat 3 lines of code.
+function defaultSort(a: string, b: string): number {
+    if (a < b) return -1
+    if (a > b) return 1
+    return 0
+}
+
+//TODO change those into enums, same thing in Generalchart.
 const displayOptions = ref([
-    "Temperature",
-    "Rel. Humidity",
-    "CO2 Content",
+    DisplayType.Temp,
+    DisplayType.Rehu,
+    DisplayType.CO2c,
 ])
 const sortOptions = ref([
-    "Room Ascending",
-    "Room Descending",
-    "Best First",
-    "Worst First"
+    SortOptions.Rasc,
+    SortOptions.Rdes,
+    SortOptions.Bfir,
+    SortOptions.Wfir,
 ])
-const displayValue = ref(displayOptions.value[0].toLowerCase());
-const sortValue = ref(sortOptions.value[0].toLowerCase());
+const displayValue = ref(displayOptions.value[0]);
+const sortValue = ref(sortOptions.value[0]);
+
+var roomList = ref(["C1 234", "C1 011", "C1 201", "C2 101", "C2 201"].sort(defaultSort))
 
 
-const roomList: string[] = ["C1 234", "C1 011", "C1 201", "C2 101", "C2 201"]
+watch(sortValue, (newSort, oldSort) => {
+    if (newSort === SortOptions.Rasc) {
+        roomSort(roomList.value, defaultSort)
+    }
+    else if (newSort === SortOptions.Rdes) {
+        roomSort(roomList.value, (a: string, b: string): number => {
+            if (a < b) return 1
+            if (a > b) return -1
+            return 0
+        })
+    }
+})
+
+
+
 
 
 </script>

@@ -5,16 +5,16 @@
             <Line id="chart1" :options="chartOptions" :data="bogusData" :plugins="[backgroundColorPlugin]"/>
         </div>
         <form class="col-start-5 row-span-6 col-span-2 bg-ext-content grid grid-cols-5 place-content-around text-4xl">
-            <input type="radio" class="col-start-1 row-start-1" :id="room + 'temp'" value="temp" :name="room" v-model="radioButtonsRead" :checked=tempCheck
+            <input type="radio" class="col-start-1 row-start-1" :id="room + 'temp'" :value=DisplayType.Temp :name="room" v-model="radioButtonsRead" :checked=tempCheck
                 >
             <label class="grid-col" :for="room + 'temp'">T</label>
             <div class="col-span-3 flex justify-end items-center"> 23 &#8451; </div>
 
-            <input type="radio" class="col-start-1 row-start-2" :id="room + 'rehu'" value="rehu" :name="room" v-model="radioButtonsRead" :checked="rehuCheck">
+            <input type="radio" class="col-start-1 row-start-2" :id="room + 'rehu'" :value=DisplayType.Rehu :name="room" v-model="radioButtonsRead" :checked="rehuCheck">
             <label class="col-start-2" :for="room + 'rehu'">RH</label>
             <div class="col-span-3 flex justify-end items-center"> 23 % </div>
 
-            <input type="radio" class="col-start-1 row-start-3" :id="room + 'co2c'" value="co2c" :name="room" v-model="radioButtonsRead" :checked="co2cCheck">
+            <input type="radio" class="col-start-1 row-start-3" :id="room + 'co2c'" :value=DisplayType.CO2c :name="room" v-model="radioButtonsRead" :checked="co2cCheck">
             <label class="col-start-2" :for="room + 'co2c'">CO2</label>
             <div class="col-span-3 flex justify-end items-end"> 230 ppm </div>
         </form>
@@ -26,6 +26,7 @@
 // tree-shakable imports
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
+import {DisplayType, SortOptions} from '../enums/enum'
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
 //For whatever reason, once the charts are fully loaded they set the radio buttons' checked property to false, and
@@ -35,14 +36,13 @@ ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScal
 const tempCheck = ref(false)
 onMounted(() => {
     tempCheck.value = true
-    console.log(props.checkAllRadios)
 })
 const rehuCheck = ref(false)
 const co2cCheck = ref(false)
 
 const props = defineProps<{
     room: string
-    checkAllRadios: string
+    checkAllRadios: DisplayType
 }>()
 
 const chartOptions = ref({
@@ -50,6 +50,8 @@ const chartOptions = ref({
     maintainAspectRatio: false,
 })
 
+//Chart data we pass to the chart element. Needs to be a computed property if we want the data to be dynamic
+//see vue-chartjs docs
 const chartData = ref([10, 20, 40])
 const bogusData = computed(() => { 
     return {
@@ -63,6 +65,9 @@ const bogusData = computed(() => {
     }
 })
 
+//the plugin that we pass to the graph that allows for changing the bg color. 
+//since i also want this color to change in certain cases, i defined a ref
+//and referenced it in the plugin. Changing the ref value will change the bg color
 const chartBgColor = ref('#00CC99')
 const backgroundColorPlugin = computed(() => {
     return {
@@ -81,35 +86,36 @@ const backgroundColorPlugin = computed(() => {
 //I want the value from the "display" dropdown to set the checked status on all apropriate checkboxes
 //watching props requires "wraping" the prop in a lambda
 watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
-    if (newCheck === "temperature"){
+    if (newCheck === DisplayType.Temp){
         rehuCheck.value = co2cCheck.value = false
         tempCheck.value = true
-        radioButtonsRead.value = 'temp'
+        radioButtonsRead.value = newCheck
     }
-    else if (newCheck === "rel. humidity"){
+    else if (newCheck === DisplayType.Rehu){
         tempCheck.value = co2cCheck.value = false
         rehuCheck.value = true
-        radioButtonsRead.value = 'rehu'
+        radioButtonsRead.value = newCheck
     }
-    else if (newCheck === "co2 content"){
+    else if (newCheck === DisplayType.CO2c){
         rehuCheck.value = tempCheck.value = false
         co2cCheck.value = true
-        radioButtonsRead.value = 'co2c'
+        radioButtonsRead.value = newCheck
     }
 })
 
-var radioButtonsRead = ref("");
+//change charts (presented data and bg color) depending on which radio button is active 
+var radioButtonsRead = ref(DisplayType.Temp);
 watch(radioButtonsRead, (newRead, oldread) => {
     console.log("current radio value:", newRead)
-    if (newRead === 'temp'){
+    if (newRead === DisplayType.Temp){
         chartData.value = [10, 20, 40]
         chartBgColor.value = '#00CC99'
     }
-    else if (newRead === 'rehu'){
+    else if (newRead === DisplayType.Rehu){
         chartData.value = [10, 10, 10]
         chartBgColor.value = '#FFEE88'
     }
-    else if (newRead === 'co2c'){
+    else if (newRead === DisplayType.CO2c){
         chartData.value = [40, 20, 10]
         chartBgColor.value = '#DD1155'
     }

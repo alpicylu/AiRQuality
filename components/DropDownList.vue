@@ -6,7 +6,7 @@
             class="px-5 rounded-full text-base">
             <option v-for="(opt, index) in options"
                 :key="opt"
-                :value="opt.toLowerCase()">{{ opt }}
+                :value="opt">{{ opt }}
             </option>
         </select>
     </form>
