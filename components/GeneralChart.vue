@@ -35,6 +35,7 @@ ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScal
 const tempCheck = ref(false)
 onMounted(() => {
     tempCheck.value = true
+    console.log(props.checkAllRadios)
 })
 const rehuCheck = ref(false)
 const co2cCheck = ref(false)
@@ -77,7 +78,25 @@ const backgroundColorPlugin = computed(() => {
     }
 });
 
-console.log(props.checkAllRadios)
+//I want the value from the "display" dropdown to set the checked status on all apropriate checkboxes
+//watching props requires "wraping" the prop in a lambda
+watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
+    if (newCheck === "temperature"){
+        rehuCheck.value = co2cCheck.value = false
+        tempCheck.value = true
+        radioButtonsRead.value = 'temp'
+    }
+    else if (newCheck === "rel. humidity"){
+        tempCheck.value = co2cCheck.value = false
+        rehuCheck.value = true
+        radioButtonsRead.value = 'rehu'
+    }
+    else if (newCheck === "co2 content"){
+        rehuCheck.value = tempCheck.value = false
+        co2cCheck.value = true
+        radioButtonsRead.value = 'co2c'
+    }
+})
 
 var radioButtonsRead = ref("");
 watch(radioButtonsRead, (newRead, oldread) => {

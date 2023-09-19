@@ -9,10 +9,12 @@
             <li v-for="r in roomList"> <GeneralChart :room="r" :checkAllRadios="displayValue" /> </li>
         </ul>
     </div>
+    <!-- <div class="text-xl">{{ displayValue }}</div> -->
 </template>
 
 <script setup lang="ts">
 
+//make those into enums
 const displayOptions = ref([
     "Temperature",
     "Rel. Humidity",
@@ -24,8 +26,9 @@ const sortOptions = ref([
     "Best First",
     "Worst First"
 ])
-const displayValue = ref("");
-const sortValue = ref("");
+const displayValue = ref(displayOptions.value[0].toLowerCase());
+const sortValue = ref(sortOptions.value[0].toLowerCase());
+
 
 const roomList: string[] = ["C1 234", "C1 011", "C1 201", "C2 101", "C2 201"]
 
