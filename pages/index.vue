@@ -9,7 +9,7 @@
             <li v-for="r in roomList"> <GeneralChart :room="r" :checkAllRadios="displayValue" /> </li>
         </ul>
     </div>
-    <!-- <div class="text-xl">{{ displayValue }}</div> -->
+    <!-- <div class="text-xl">{{ testFetch[0].ti }}</div> -->
 </template>
 
 <script setup lang="ts">
@@ -41,8 +41,8 @@ const displayOptions = ref([
 const sortOptions = ref([
     SortOptions.Rasc,
     SortOptions.Rdes,
-    SortOptions.Bfir,
-    SortOptions.Wfir,
+    SortOptions.Tasc,
+    SortOptions.Tdes,
 ])
 const displayValue = ref(displayOptions.value[0]);
 const sortValue = ref(sortOptions.value[0]);
@@ -63,8 +63,7 @@ watch(sortValue, (newSort, oldSort) => {
     }
 })
 
-
-
-
+const {data} = await useFetch<{time: string, value: string, id: string}[]>('/api/sensors')
+console.log(data.value?.at(0)?.time)
 
 </script>

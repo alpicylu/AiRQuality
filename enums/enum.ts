@@ -10,6 +10,6 @@ export enum DisplayType {
 export enum SortOptions {
     Rasc = "Room Ascending",
     Rdes = "Room Descending",
-    Bfir = "Best First",
-    Wfir = "Worst First"
+    Tasc = "Temperature Ascending",
+    Tdes = "Temperature Descending",
 }

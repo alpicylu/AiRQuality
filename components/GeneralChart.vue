@@ -5,8 +5,7 @@
             <Line id="chart1" :options="chartOptions" :data="bogusData" :plugins="[backgroundColorPlugin]"/>
         </div>
         <form class="col-start-5 row-span-6 col-span-2 bg-ext-content grid grid-cols-5 place-content-around text-4xl">
-            <input type="radio" class="col-start-1 row-start-1" :id="room + 'temp'" :value=DisplayType.Temp :name="room" v-model="radioButtonsRead" :checked=tempCheck
-                >
+            <input type="radio" class="col-start-1 row-start-1" :id="room + 'temp'" :value=DisplayType.Temp :name="room" v-model="radioButtonsRead" :checked=tempCheck>
             <label class="grid-col" :for="room + 'temp'">T</label>
             <div class="col-span-3 flex justify-end items-center"> 23 &#8451; </div>
 
@@ -50,7 +49,7 @@ const chartOptions = ref({
     maintainAspectRatio: false,
 })
 
-//Chart data we pass to the chart element. Needs to be a computed property if we want the data to be dynamic
+//Chart data we pass to the chart element. Vue-chartjs needs it to be a computed property if we want the data to be dynamic
 //see vue-chartjs docs
 const chartData = ref([10, 20, 40])
 const bogusData = computed(() => { 
@@ -108,7 +107,7 @@ var radioButtonsRead = ref(DisplayType.Temp);
 watch(radioButtonsRead, (newRead, oldread) => {
     console.log("current radio value:", newRead)
     if (newRead === DisplayType.Temp){
-        chartData.value = [10, 20, 40]
+        chartData.value = [10, 20, 40] //make an api call to fetch data here
         chartBgColor.value = '#00CC99'
     }
     else if (newRead === DisplayType.Rehu){
