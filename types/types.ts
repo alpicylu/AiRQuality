@@ -13,3 +13,11 @@ export enum SortOptions {
     Tasc = "Temperature Ascending",
     Tdes = "Temperature Descending",
 }
+
+export interface sensorDataType {
+    time: string,
+    temp: number,
+    rehu: number,
+    co2c: number,
+    id: number
+}

@@ -25,7 +25,7 @@
 // tree-shakable imports
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
-import {DisplayType, SortOptions} from '../enums/enum'
+import {DisplayType, sensorDataType} from '../types/types'
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
 //For whatever reason, once the charts are fully loaded they set the radio buttons' checked property to false, and
@@ -42,6 +42,7 @@ const co2cCheck = ref(false)
 const props = defineProps<{
     room: string
     checkAllRadios: DisplayType
+    sensorData?: sensorDataType[]
 }>()
 
 const chartOptions = ref({
@@ -54,7 +55,7 @@ const chartOptions = ref({
 const chartData = ref([10, 20, 40])
 const bogusData = computed(() => { 
     return {
-        labels: [ 'January', 'February', 'March' ],
+        labels: [...Array(chartData.value.length).keys()],
         datasets: [{ 
             data: chartData.value,
             label: 'Temperature',
@@ -82,6 +83,42 @@ const backgroundColorPlugin = computed(() => {
     }
 });
 
+function getReadingFromSensorData(type: DisplayType){
+    // console.log(props.sensorData)
+    var tempArr: number[] = []
+
+    switch (type){
+        case DisplayType.Temp:
+            props.sensorData?.forEach((elem, index) => {
+                tempArr.push(elem.temp)
+            })
+    }
+    switch (type){
+        case DisplayType.Rehu:
+            props.sensorData?.forEach((elem, index) => {
+                tempArr.push(elem.rehu)
+            })
+    }
+    switch (type){
+        case DisplayType.CO2c:
+            props.sensorData?.forEach((elem, index) => {
+                tempArr.push(elem.co2c)
+            })
+    }
+
+    chartData.value = tempArr //is this a deep copy? should i be worried?
+}
+
+getReadingFromSensorData(DisplayType.Temp)
+
+//this watcher does not get triggered? (and it should)
+watch(() => props.sensorData, (newData, oldData) => {
+    console.log(newData)
+
+    getReadingFromSensorData(DisplayType.Temp)
+})
+
+
 //I want the value from the "display" dropdown to set the checked status on all apropriate checkboxes
 //watching props requires "wraping" the prop in a lambda
 watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
@@ -107,18 +144,18 @@ var radioButtonsRead = ref(DisplayType.Temp);
 watch(radioButtonsRead, (newRead, oldread) => {
     console.log("current radio value:", newRead)
     if (newRead === DisplayType.Temp){
-        chartData.value = [10, 20, 40] //make an api call to fetch data here
+        getReadingFromSensorData(DisplayType.Temp) //make an api call to fetch data here
         chartBgColor.value = '#00CC99'
     }
     else if (newRead === DisplayType.Rehu){
-        chartData.value = [10, 10, 10]
+        getReadingFromSensorData(DisplayType.Rehu)
         chartBgColor.value = '#FFEE88'
     }
     else if (newRead === DisplayType.CO2c){
-        chartData.value = [40, 20, 10]
+        getReadingFromSensorData(DisplayType.CO2c)
         chartBgColor.value = '#DD1155'
     }
-    console.log("chart data current:", bogusData.value.datasets[0].data)
+    // console.log("chart data current:", bogusData.value.datasets[0].data)
 })
 
 </script>
