@@ -6,8 +6,8 @@
 
     <div class="flex flex-col flex-auto min-h-0 w-5/6 justify-start items-center">
         <ul class="overflow-y-auto overflow-hidden h-fit w-full">
-            <li v-for="(r, i) in roomList"> <GeneralChart
-                :room="r" :checkAllRadios="displayValue" :sensorData="fetchedSensorData.slice(i*10, i*10+10)" /> </li>
+            <li v-for="r in roomList" :key="r.roomIndex" > <GeneralChart
+                :room="r.roomName" :checkAllRadios="displayValue" :sensorData="fetchedSensorData.slice(r.roomIndex*10, r.roomIndex*10+10)" /> </li>
         </ul>
     </div>
     <!-- <div class="text-xl">{{ testFetch[0].ti }}</div> -->
@@ -16,25 +16,21 @@
 <script setup lang="ts">
 import {DisplayType, SortOptions, sensorDataType} from '../types/types'
 
-
-function roomSort(rooms: string[], sortFun: (a: string, b: string) => number){//this function sorts the list IN PLACE
-    //use a map function to create a temporary list, whose strings have no spaces
-    //(i dont need to remove spaces)
-    //then sort the items of that list alphabetically.
-    // const tempArr: string[] = rooms.map((room: string) => {
-    //     return room.replace(/\s+/g, '')
-    // })
-    rooms.sort(sortFun)
-}
-//defined defaultSort solely because i want the rooms to be sorted on first render and i dont want
-//to repeat 3 lines of code.
-function defaultSort(a: string, b: string): number {
-    if (a < b) return -1
-    if (a > b) return 1
-    return 0
+interface RoomObject {
+    roomName: string,
+    roomIndex: number
 }
 
-//TODO change those into enums, same thing in Generalchart.
+//the room index does not serve re-ordering the list. Rather, it simply defines which portion of the fetched data
+//will be assigned to the GeneralChart component. The actuall reordering is done by changing the order of the room objects in this list
+//roomIndex serves just to connect the room with its data.
+var roomList = ref<RoomObject[]>([
+    {roomName: "C1 234", roomIndex: 0},
+    {roomName: "C1 011", roomIndex: 1},
+    {roomName: "C1 201", roomIndex: 2},
+    {roomName: "C2 101", roomIndex: 3},
+    {roomName: "C2 201", roomIndex: 4}
+].sort(defaultSort))
 const displayOptions = ref([
     DisplayType.Temp,
     DisplayType.Rehu,
@@ -48,7 +44,6 @@ const sortOptions = ref([
 ])
 const displayValue = ref(displayOptions.value[0]);
 const sortValue = ref(sortOptions.value[0]);
-var roomList = ref(["C1 234", "C1 011", "C1 201", "C2 101", "C2 201"].sort(defaultSort))
 
 const fetchedSensorData = ref<sensorDataType[]>(Array(50).fill({
     time: '0',
@@ -56,43 +51,47 @@ const fetchedSensorData = ref<sensorDataType[]>(Array(50).fill({
     rehu: 0,
     co2c: 0,
     id: 0
-}))//prepopulate with an array (described in todo)
-async function getSensorData(sensorID: number) {
+}))//prepopulate with an array (described in todo). If initial value is not provided to ref() then it defaults to undefined
+//which makes Vue and JS confused sometimes
+
+function roomSort(rooms: RoomObject[], sortFun: (a: RoomObject, b: RoomObject) => number){//this function sorts the list IN PLACE
+    rooms.sort(sortFun) 
+}
+//defined defaultSort solely because i want the rooms to be sorted on first render and i dont want
+//to repeat 3 lines of code.
+function defaultSort(a: RoomObject, b: RoomObject): number {
+    if (a.roomName < b.roomName) return -1
+    if (a.roomName > b.roomName) return 1
+    return 0
+} 
+
+//make a call to the internal API for the data. Make sure the data is not null or undef
+async function getSensorData() {
     const { data } = await useFetch<sensorDataType[]>('/api/sensors')
     if (data.value !== null){
         fetchedSensorData.value = data.value
     }
 }
 
+//Whenever the sort dropdown list changes its value i want to reorder the chart components
 watch(sortValue, (newSort, oldSort) => {
     if (newSort === SortOptions.Rasc) {
         roomSort(roomList.value, defaultSort)
     }
     else if (newSort === SortOptions.Rdes) {
-        roomSort(roomList.value, (a: string, b: string): number => {
-            if (a < b) return 1
-            if (a > b) return -1
+        roomSort(roomList.value, (a: RoomObject, b: RoomObject): number => {
+            if (a.roomName < b.roomName) return 1
+            if (a.roomName > b.roomName) return -1
             return 0
         })
     }
 })
 
-getSensorData(0)
+getSensorData()    
+
 
 /* TODO
 I want the graphs to load AFTER the server fetched the data. Make all the necessary fetches with the onBeforeMounted lifehook
-
-
-I need to make sure that fetchedSensorData is not undefined, because Vue/JS do not like working with undefined values
-give fSD an initial 0-ed value - a list of objects, all of which have their properties set to 0.
-Remember that this is only a mockup, in reality i will be fetching, distributing and displaying data a little differently
-but at the very least its a good exercise.
-
-As a bonus, passing all-0 values, rendering a chart, passing actual values and then refreshing charts will have a pretty nice effect
-a flat line will bounce and form itself into nice looking data.
-
-
-refactor your code - first imports, then lifehooks, then refs, then funs, then the rest.
 */
 
 </script>

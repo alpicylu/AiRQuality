@@ -52,7 +52,7 @@ const chartOptions = ref({
 
 //Chart data we pass to the chart element. Vue-chartjs needs it to be a computed property if we want the data to be dynamic
 //see vue-chartjs docs
-const chartData = ref([10, 20, 40])
+const chartData = ref<number[]>([])
 const bogusData = computed(() => { 
     return {
         labels: [...Array(chartData.value.length).keys()],
@@ -109,11 +109,23 @@ function getReadingFromSensorData(type: DisplayType){
     chartData.value = tempArr //is this a deep copy? should i be worried?
 }
 
-getReadingFromSensorData(DisplayType.Temp)
+// getReadingFromSensorData(DisplayType.Temp) 
+//i need to run this function once the data has been fetched from the API
+//this function is ran too early - when the default 0-ed object array is still the current dataset, before the fetched
+//data is relayed to this component
 
-//this watcher does not get triggered? (and it should)
+//I need to give myself more credit for this.
+//Previously i had a problem where the charts would display data only when i would hot-reload them, or something like that.
+//Whatever the core issue was, this watch seems to solve it.
+//What really happens is:
+//  the ref() in index.vue that v-binds to chart's sensorData prop starts with an array of zeroed objects that are immediately
+//sent to the charts
+//  the fetch is called and takes about a second to provide the app with data
+//  the charts render those zeroes resulting in all flat lines accross all charts
+//  the fetch request concludes and saves data the ref() that if v-bound to the charts
+//  the below watcher notices the change in the prop, splits and saves data to the array that holds data to be displayed
 watch(() => props.sensorData, (newData, oldData) => {
-    console.log(newData)
+    console.log("Sensor data watcher triggered")
 
     getReadingFromSensorData(DisplayType.Temp)
 })
@@ -155,7 +167,7 @@ watch(radioButtonsRead, (newRead, oldread) => {
         getReadingFromSensorData(DisplayType.CO2c)
         chartBgColor.value = '#DD1155'
     }
-    // console.log("chart data current:", bogusData.value.datasets[0].data)
 })
+ 
 
 </script>
