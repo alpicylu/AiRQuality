@@ -73,6 +73,10 @@ async function getSensorData() {
     }
 }
 
+async function dnldDataToDB(){
+    await useFetch('/api/dnld-sensor-data')
+}
+
 //Whenever the sort dropdown list changes its value i want to reorder the chart components
 watch(sortValue, (newSort, oldSort) => {
     if (newSort === SortOptions.Rasc) {
@@ -88,6 +92,8 @@ watch(sortValue, (newSort, oldSort) => {
 })
 
 getSensorData()    
+dnldDataToDB()
+
 
 
 /* TODO

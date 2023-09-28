@@ -1,5 +1,8 @@
 /* i wanted to create those enums to avoid passing string literals through components, emits, etc.
-Especially helpful in the GeneralChart component */
+Especially helpful in the GeneralChart component 
+
+TODO: make this a module in the /modules dir.
+*/
 
 export enum DisplayType {
     Temp = "Temperature",
