@@ -91,7 +91,7 @@ watch(sortValue, (newSort, oldSort) => {
     }
 })
 
-getSensorData()    
+// getSensorData()    
 dnldDataToDB()
 
 
