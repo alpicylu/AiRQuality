@@ -10,9 +10,8 @@
                 :room="r.roomName" :checkAllRadios="displayValue" :sensorData="fetchedSensorData.slice(r.roomIndex*10, r.roomIndex*10+10)" /> </li>
         </ul>
     </div>
-    <!-- <div class="text-xl">{{ testFetch[0].ti }}</div> -->
 </template>
-
+ 
 <script setup lang="ts">
 import {DisplayType, SortOptions, sensorDataType} from '../types/types'
 
@@ -51,12 +50,9 @@ const fetchedSensorData = ref<sensorDataType[]>(Array(50).fill({
     rehu: 0,
     co2c: 0,
     id: 0
-}))//prepopulate with an array (described in todo). If initial value is not provided to ref() then it defaults to undefined
+}))//prepopulate with an array. If initial value is not provided to ref() then it defaults to undefined
 //which makes Vue and JS confused sometimes
 
-function roomSort(rooms: RoomObject[], sortFun: (a: RoomObject, b: RoomObject) => number){//this function sorts the list IN PLACE
-    rooms.sort(sortFun) 
-}
 //defined defaultSort solely because i want the rooms to be sorted on first render and i dont want
 //to repeat 3 lines of code.
 function defaultSort(a: RoomObject, b: RoomObject): number {
@@ -80,10 +76,10 @@ async function dnldDataToDB(){
 //Whenever the sort dropdown list changes its value i want to reorder the chart components
 watch(sortValue, (newSort, oldSort) => {
     if (newSort === SortOptions.Rasc) {
-        roomSort(roomList.value, defaultSort)
+        roomList.value.sort(defaultSort)
     }
     else if (newSort === SortOptions.Rdes) {
-        roomSort(roomList.value, (a: RoomObject, b: RoomObject): number => {
+        roomList.value.sort((a: RoomObject, b: RoomObject): number => {
             if (a.roomName < b.roomName) return 1
             if (a.roomName > b.roomName) return -1
             return 0
@@ -92,7 +88,13 @@ watch(sortValue, (newSort, oldSort) => {
 })
 
 // getSensorData()    
-dnldDataToDB()
+// dnldDataToDB()
+
+// await useFetch('/api/dnld-sensor-data')
+if (process.client) console.log("I ran in client")
+if (process.server) console.log("I ran in server")
+
+
 
 
 

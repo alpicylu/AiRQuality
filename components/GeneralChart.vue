@@ -28,6 +28,13 @@ import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, Ca
 import {DisplayType, sensorDataType} from '../types/types'
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
+const props = defineProps<{
+    room: string
+    checkAllRadios: DisplayType
+    sensorData?: sensorDataType[]
+}>()
+
+
 //For whatever reason, once the charts are fully loaded they set the radio buttons' checked property to false, and
 //i want the temperature button to be enabled by default.
 //To circumvent that, it set teh checked prop to false at first, wait untill the component fully loads, and then set it to true
@@ -39,26 +46,23 @@ onMounted(() => {
 const rehuCheck = ref(false)
 const co2cCheck = ref(false)
 
-const props = defineProps<{
-    room: string
-    checkAllRadios: DisplayType
-    sensorData?: sensorDataType[]
-}>()
-
 const chartOptions = ref({
     responsive: true,
     maintainAspectRatio: false,
 })
+const chartData = ref<number[]>([])
+const chartBgColor = ref('#00CC99')
+
+const radioButtonsRead = ref(DisplayType.Temp);
 
 //Chart data we pass to the chart element. Vue-chartjs needs it to be a computed property if we want the data to be dynamic
 //see vue-chartjs docs
-const chartData = ref<number[]>([])
 const bogusData = computed(() => { 
     return {
         labels: [...Array(chartData.value.length).keys()],
         datasets: [{ 
             data: chartData.value,
-            label: 'Temperature',
+            label: 'Data',
             backgroundColor: '#DA4167',
             borderColor: '#7C90DB'
         }]
@@ -68,7 +72,6 @@ const bogusData = computed(() => {
 //the plugin that we pass to the graph that allows for changing the bg color. 
 //since i also want this color to change in certain cases, i defined a ref
 //and referenced it in the plugin. Changing the ref value will change the bg color
-const chartBgColor = ref('#00CC99')
 const backgroundColorPlugin = computed(() => {
     return {
         id: 'customCanvasBackgroundColor',
@@ -84,9 +87,7 @@ const backgroundColorPlugin = computed(() => {
 });
 
 function getReadingFromSensorData(type: DisplayType){
-    // console.log(props.sensorData)
     var tempArr: number[] = []
-
     switch (type){
         case DisplayType.Temp:
             props.sensorData?.forEach((elem, index) => {
@@ -105,14 +106,8 @@ function getReadingFromSensorData(type: DisplayType){
                 tempArr.push(elem.co2c)
             })
     }
-
     chartData.value = tempArr //is this a deep copy? should i be worried?
 }
-
-// getReadingFromSensorData(DisplayType.Temp) 
-//i need to run this function once the data has been fetched from the API
-//this function is ran too early - when the default 0-ed object array is still the current dataset, before the fetched
-//data is relayed to this component
 
 //I need to give myself more credit for this.
 //Previously i had a problem where the charts would display data only when i would hot-reload them, or something like that.
@@ -123,16 +118,20 @@ function getReadingFromSensorData(type: DisplayType){
 //  the fetch is called and takes about a second to provide the app with data
 //  the charts render those zeroes resulting in all flat lines accross all charts
 //  the fetch request concludes and saves data the ref() that if v-bound to the charts
-//  the below watcher notices the change in the prop, splits and saves data to the array that holds data to be displayed
+//  the below watcher notices the change in the prop, splits and saves data to the array that holds data to be displayed.
+//gRFSD gets the current display value as its argument. If it were set to a constant (eg. DisplayType.Temp) that would cause
+//the charts to not display the data properly after sorting. That is because sorting recalculates the sensorData prop, thus triggering
+//this watcher, which with a constant default value would cause all charts to display a constant type of data (temps/rehu/co2). The
+//proper display type would only be applied after enabling a different radio and enabling the correct one.
 watch(() => props.sensorData, (newData, oldData) => {
     console.log("Sensor data watcher triggered")
-
-    getReadingFromSensorData(DisplayType.Temp)
+    getReadingFromSensorData(props.checkAllRadios) 
 })
 
-
 //I want the value from the "display" dropdown to set the checked status on all apropriate checkboxes
-//watching props requires "wraping" the prop in a lambda
+//watching props requires "wraping" the prop in a lambda.
+//this is basically equivalent to changing all radio buttons to a specific value manually (but faster).
+//all it does is change the "checked" value of radios + update radioButtonsRead, which is a ref() that radios v-model to.
 watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
     if (newCheck === DisplayType.Temp){
         rehuCheck.value = co2cCheck.value = false
@@ -152,7 +151,7 @@ watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
 })
 
 //change charts (presented data and bg color) depending on which radio button is active 
-var radioButtonsRead = ref(DisplayType.Temp);
+//changing an individual radio button triggers this watcher.
 watch(radioButtonsRead, (newRead, oldread) => {
     console.log("current radio value:", newRead)
     if (newRead === DisplayType.Temp){

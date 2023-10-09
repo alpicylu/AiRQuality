@@ -28,11 +28,15 @@ export default defineEventHandler(async () => {
             headers: {'content-type':'application/json'},
         })
 
-        console.log(sensorData.at(0))
+        // console.log(sensorData.at(0))
+        console.log("sensor api fetch handler")
 
+        //If fetched data contains undefined/null values, throw an error
         if (Object.values(sensorData).some(value => value===undefined )){
             throw new Error("Fetched data containes undefined values")
         }
+
+        // await prisma.reading.deleteMany()
 
         await prisma.sensor.upsert({ //make this intu upsert 
             where: { name: "C1 234" },
@@ -65,7 +69,6 @@ export default defineEventHandler(async () => {
     } catch (error) {
         console.log("Failed saving to DB: ", error)
     }
-
 
 })
 
