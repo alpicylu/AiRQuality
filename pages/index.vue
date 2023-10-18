@@ -63,10 +63,12 @@ function defaultSort(a: RoomObject, b: RoomObject): number {
 
 //make a call to the internal API for the data. Make sure the data is not null or undef
 async function getSensorData() {
-    const { data } = await useFetch<sensorDataType[]>('/api/sensors')
+    const {data, error, status} = await useFetch<sensorDataType[]>('/api/sensors')
     if (data.value !== null){
         fetchedSensorData.value = data.value
+        console.log(data.value.at(0))
     }
+
 }
 
 async function dnldDataToDB(){
@@ -87,19 +89,20 @@ watch(sortValue, (newSort, oldSort) => {
     }
 })
 
-// getSensorData()    
-// dnldDataToDB()
 
-// await useFetch('/api/dnld-sensor-data')
-if (process.client) console.log("I ran in client")
-if (process.server) console.log("I ran in server")
+if (process.client) {
+    console.log("I ran in client")
+    getSensorData()
+}
 
-
-
-
+if (process.server) {
+    console.log("I ran in server")
+    dnldDataToDB()
+}
 
 /* TODO
 I want the graphs to load AFTER the server fetched the data. Make all the necessary fetches with the onBeforeMounted lifehook
 */
+
 
 </script>
