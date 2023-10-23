@@ -5,7 +5,7 @@ import { publicIpv4 } from 'public-ip'
 import * as crypto from 'node:crypto'
 import { stringify } from 'node:querystring'
 import { env } from 'node:process'
-import { apiKey } from "../API_key"
+import { apiKey, gid, uid } from "../API_key"
 
 //This is not secure, i know it, but cloud.iqrf's SSL cert has expired. With the certificate being not valid.
 //the only option is to not verify their validity.
@@ -20,7 +20,7 @@ export default defineNitroPlugin(async (nitroApp) => {
         $fetch<string>(await constructURL("uplc"))
         .then(async (res) => {
             if (res !== "OK;") throw new Error("Iqrf cloud server error") //TODO better Error handling
-            await getRequestedSensorData(6).catch((err) => console.log) //6 retries, each waits 10s, for a total of 1min
+            await getRequestedSensorData(6, 1000*10).catch((err) => console.log) //6 retries, each waits 10s, for a total of 1min
             return
         })   
         .catch((err) => {
@@ -45,14 +45,14 @@ async function constructURL(command: string): Promise<string> {
     //https://stackoverflow.com/questions/12710905/how-do-i-dynamically-assign-properties-to-an-object-in-typescript 
     var query: {[key: string]: any} = {}
     query.ver = 2,
-    query.uid = "solarlab",
-    query.gid = "12003fb9",
+    query.uid = uid,
+    query.gid = gid,
     query.cmd = command    
 
     switch (command){
         case "dnld":
             // query.from = 95079 //hardcoded to always get this one record 
-            query.new = 1
+            query.new = 1 //cloud internally keeps track of the last record i pulled
             query.count = 1
             break
         case "uplc":
@@ -67,14 +67,12 @@ async function constructURL(command: string): Promise<string> {
 }
 
 
-async function getRequestedSensorData(retries: number){
+async function getRequestedSensorData(retries: number, delay: number){
     var repetitions = 0
-    const delay = 1000*10
-
     var intervalID = setInterval(async () => {
         $fetch<string>(await constructURL("dnld"))
         .then((res) => {
-            const parsedData = parseRawServerData(res) //handle the situation where the data i get is not sensor readings (GW OK signal, Sensor OK, etc.)
+            const parsedData = parseRawServerData(res) 
             if (parsedData === null) return
             console.log(parsedData.readings)
             clearInterval(intervalID)
@@ -86,6 +84,7 @@ async function getRequestedSensorData(retries: number){
 
         if (++repetitions == retries){
             clearInterval(intervalID)
+            //TODO: notify that, despite numerous retries, fetch has failed
         }
 
     }, delay)
@@ -102,23 +101,47 @@ function parseRawServerData(rawData: string) {
     //split what you get from the server into index, datetime, and data field
     //the below regex does not cate about the number of matching records (the XX;;; part)
     const re1 = /(\d+);(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2});([A-F0-9]+);/g
-    const arr1 = [...rawData.matchAll(re1)][0]
+    const arr = [...rawData.matchAll(re1)][0]
     //if i entered more matching strings, the arr would be longer at the first level (ie. item arr[1] would exist)
     //but since i get a string that has only one matching pattern, i only get one element in the array.
 
     //arr1[0] is the entire string matched
     //arr1[1] is the record index
-    const datetime = new Date(arr1[2])//arr1[2] gets the datetime field
-    const readings = parseSensorData(arr1[3])//arr1[3] gets the data field
+    const readings = parseSensorData(arr[3])//arr1[3] gets the data field
+    if (readings.length === 0) return null //sensor data is, for some reason, invalid
+
+    const datetime = new Date(arr[2])//arr1[2] gets the datetime field
     console.log(`${readings} @: ${datetime}`)
 
     return {datetime, readings} //transform it before returning into the same format as the DB reqiures
 }
 
+
+//we need to filter out responses that we dont really caer about, like "GW connected" or "talked to a sensor"
+
+function filterSensorData(rawSensor: string): boolean {
+    if (rawSensor.slice(0, 4) === "0000") return false //data sent by GW once it connects to the server
+    // else if (rawSensor.length != 32 && rawSensor.length != 38) return false //every crucial-data-containing message
+    //a propper sensor-message-data-thing has a sequence of bytes: XXXX.5E.81.(0140|0150)
+    const filterRex = /(\d{4})(5E81)(0140|0150)(00)(?:[A-Z0-9]+)/g
+    const matches = [...rawSensor.matchAll(filterRex)][0]
+
+    //TODO: at this point it should read the list of all available sensors from the db (0001, 0002, 0003, 0004)
+    //and compare it with the \d{4}.
+    if (matches[1] !== "0100") return false
+    if (matches[2] !== "5E81") return false
+    if (matches[3] !== "0140" && matches[3] !== "0150") return false
+    if (matches[4] !== "00") return false
+
+    return true 
+}
+
 function parseSensorData(rawSensor: string): number[] {
-    //write a proper function that filters out all the not interesting data
-    if (rawSensor.slice(0, 4) == "0000") throw new Error ("Parser cannot process 'GW connected' datefield. Implement error handling")
-    if (rawSensor.length != 32 && rawSensor.length != 38) throw new Error ("Invalid data field lenght: Sensor data is either 16 or 19 bytes long")
+
+    if (!filterSensorData(rawSensor)){
+        return []
+    }
+
     //Look up the sensor's docs - to get temperature from "raw" reading, multiply it by 0.0625 (to get C)
     //for humidity (in %) mult by 0.5, etc.
     const unitArray = [0.0625, 0.5, 1, 1]
