@@ -1,12 +1,15 @@
 import { nitroApp } from "nitropack/dist/runtime/app";
 import { scheduleJob } from 'node-schedule'
-import { Md5 } from 'ts-md5'
 import { publicIpv4 } from 'public-ip'
 import * as crypto from 'node:crypto'
 import { stringify } from 'node:querystring'
 import { env } from 'node:process'
 import { apiKey, gid, uid } from "../API_key"
+import { sensorDataType } from "../../types/types"
+import { PrismaClient } from '@prisma/client'
+const prisma = new PrismaClient()
 
+prisma.reading.deleteMany()
 //This is not secure, i know it, but cloud.iqrf's SSL cert has expired. With the certificate being not valid.
 //the only option is to not verify their validity.
 env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
@@ -18,14 +21,14 @@ Additionally, you need to take into accout all the other data that is sent to th
 If you were to fetch only one record every "dnld" fetch, then you would not be able to keep up - more records would be produced
 than you would be able to fetch, causing a catastrophic drift.
 Catch as many records as you can and then filter them
+
+PLEASE DOCUMENT THIS CODE.
 */
-
-
 export default defineNitroPlugin(async (nitroApp) => {
     //i need to make the 2 fetches synchronously, hence the "await" on the first one
     //the upload request will not immediately return the data collected from the sensors - the content
     //of "result" is either "OK;" or "ERROR;"
-    scheduleJob('*/20 * * * * *', async () => {
+    scheduleJob('*/1 * * * *', async () => {
         var responseValid = await $fetch<string>(await constructURL("uplc"))
         .then(res => {
             return res === "OK;"
@@ -34,11 +37,14 @@ export default defineNitroPlugin(async (nitroApp) => {
             return false
         })
 
-        if (responseValid) await new Promise((resolve, reject) => {
+        // const responseValid = true
+
+        if (responseValid) await new Promise< (sensorDataType|null)[] >((resolve, reject) => {
             const repLimit = 6
             var reps = 0
             const repDelay = 1000*10
 
+            //TODO make this into setTimeout loop
             const intervalID = setInterval(async () => {
                 $fetch<string>(await constructURL("dnld"))
                 .then(res => {
@@ -46,7 +52,7 @@ export default defineNitroPlugin(async (nitroApp) => {
                     if (parsedData !== null){
                         clearInterval(intervalID)
                         resolve(parsedData)
-                    }  //terminates the promise chain, goes to the if clause
+                    }
                     //++reps has to be the first operand (see AND docs)
                     else if (++reps === repLimit && parsedData === null){
                         clearInterval(intervalID)
@@ -58,7 +64,10 @@ export default defineNitroPlugin(async (nitroApp) => {
 
             }, repDelay)
         })
-        .then(res=>console.log(res))
+        .then(async (res)=> {
+            console.log(res)
+            return await insertToDB(res)
+        })
         .catch(err=>console.log(err))
 
         return
@@ -87,9 +96,10 @@ async function constructURL(command: string): Promise<string> {
 
     switch (command){
         case "dnld":
-            // query.from = 95079 //hardcoded to always get this one record 
+            // query.from = 95083 //hardcoded to always get this one record 
+            // query.to = 95086
             query.new = 1 //cloud internally keeps track of the last record i pulled
-            query.count = 1
+            // query.count = 1
             break
         case "uplc":
             query.data = "01005E010140FFFFFFFF"
@@ -102,30 +112,38 @@ async function constructURL(command: string): Promise<string> {
     return `${base}${parameter_part}&signature=${signature}`
 }
 
-//TODO you need to consider the situation where the data fetched is not the sensor readings, for instance the GW connected signal.
-//you should either retry the request, without incrementing the retry counter, or fetch all new records and then filter them.
-function parseRawServerData(rawData: string): {datetime: Date; readings: number[]} | null {
+
+function parseRawServerData(rawData: string): Array<sensorDataType | null> | null {
     console.log(rawData)
     if (rawData === "0;;;\r\n") return null //no new data on the server
-    
-    //split what you get from the server into index, datetime, and data field
-    //the below regex does not cate about the number of matching records (the XX;;; part)
+
+    var sensorDataObj: sensorDataType
+    var results: Array<sensorDataType | null> = []
+
     const re1 = /(\d+);(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2});([A-F0-9]+);/g
-    const arr = [...rawData.matchAll(re1)][0]
-    //if i entered more matching strings, the arr would be longer at the first level (ie. item arr[1] would exist)
-    //but since i get a string that has only one matching pattern, i only get one element in the array.
-
-    //arr1[0] is the entire string matched
-    //arr1[1] is the record index
-    const readings = parseSensorData(arr[3])//arr1[3] gets the data field
-    if (readings.length === 0) return null //sensor data is, for some reason, invalid
-
-    const datetime = new Date(arr[2])//arr1[2] gets the datetime field
-    console.log(`${readings} @: ${datetime}`)
-
-    return {datetime, readings} //TODO transform it before returning into the same format as the DB reqiures
+    const arr = [...rawData.matchAll(re1)]
+    arr.forEach((el, i, arr) => {
+        const readings = parseSensorData(el[3])
+        if (readings.length === 0){
+            results.push(null)
+        }
+        else {
+            results.push(sensorDataObj = {
+                // time: new Date(el[2]).toISOString(),
+                // time: new Date(el[2]).toString(),
+                // time: new Date().toLocaleString([], {timeZone: "Poland"}), //not all browsers need to support timezones other than UTC
+                //the above converts well, but data needs to be stored in ISO format, and the above is not iso
+                //you could store in UTC and then display in local though.
+                time: new Date().toISOString(),
+                id: readings[0],
+                temp: readings[1],
+                rehu: readings[2],
+                co2c: readings[3]
+            })
+        }
+    })
+    return results
 }
-
 
 //we need to filter out responses that we dont really caer about, like "GW connected" or "talked to a sensor"
 function filterSensorData(rawSensor: string): boolean {
@@ -134,7 +152,7 @@ function filterSensorData(rawSensor: string): boolean {
     //a propper sensor-message-data-thing has a sequence of bytes: XXXX.5E.81.(0140|0150)
     const filterRex = /(\d{4})(5E81)(0140|0150)(00)(?:[A-Z0-9]+)/g
     const matches = [...rawSensor.matchAll(filterRex)][0]
-    if (matches.length <= 0) return false //if matchAll does not find a match, it returns an empty list
+    if (matches === undefined) return false //if matchAll does not find a match, it returns an empty list. Indexing an empty list results in undef.
 
     //TODO: at this point it should read the list of all available sensors from the db (0001, 0002, 0003, 0004)
     //and compare it with the \d{4}.
@@ -154,13 +172,16 @@ function parseSensorData(rawSensor: string): number[] {
 
     //Look up the sensor's docs - to get temperature from "raw" reading, multiply it by 0.0625 (to get C)
     //for humidity (in %) mult by 0.5, etc.
-    const unitArray = [0.0625, 0.5, 1, 1]
+    //I am technically treating the ID of a sensor as a measurement and storing it as number, but the code is a bit cleaner that way
+    //id, temperature, humidity, CO2, (optionally) battery
+    const unitArray = [1, 0.0625, 0.5, 1, 1]
     //split the data field into frames: metadata, temp, rh, co2, and optionally battery
-    //TODO? Do i even need the named group? Consider another approach
     //TODO this approach will only work if the order of sensor readings does not change.
-    const re2 = /[A-F0-9]{16}01([A-F0-9]{4})80([A-F0-9]{2})02([A-F0-9]{4})(?:04(?<bat>[A-F0-9]{4}))?/g
+    //indexes:       1                       2             3            4                      5
+    //            sensorID          01     temp    80   humidity  02   co2          04      battery
+    const re2 = /(\d{4})[A-F0-9]{12}01([A-F0-9]{4})80([A-F0-9]{2})02([A-F0-9]{4})(?:04(?<bat>[A-F0-9]{4}))?/g
     const arr2 = [...rawSensor.matchAll(re2)][0]
-    const sensorReadings = arr2.slice(1,4) //TODO: i dont think you should rely on the position of readings in a list. Name all groups.
+    const sensorReadings = arr2.slice(1,5)
     if (arr2.groups !== undefined && arr2.groups.bat !== null){
         sensorReadings.push(arr2.groups.bat) //TODO: test if this clause is robust
     }
@@ -175,6 +196,8 @@ function parseSensorData(rawSensor: string): number[] {
     })
 
     //AT LONG LAST, translate hex values to dec
+    //result indexes: 0 - id, 1 - temp, 2 - humid, 3 - co2 (4 - battery)
+    //TODO maybe make this function return the sensorDataType obj?
     var result: number[] = []
     sensorReadings.forEach((el, i, arr) => {
         result[i] = parseInt(el, 16) * unitArray[i]
@@ -182,3 +205,33 @@ function parseSensorData(rawSensor: string): number[] {
     return result
 }
 
+async function insertToDB(data: (sensorDataType | null)[]): Promise<void> {
+    data.forEach(async (el, i, arr) => {
+
+        if (el !== null) await prisma.sensor.upsert({ //make this intu upsert 
+            where: { name: "C1 234" },
+            create: {
+                name: "C1 234",
+                readings: {
+                    create: { //can i reference TS values in Prisma queries?
+                        timestamp: el.time,
+                        temp: el.temp,
+                        rehu: el.rehu,
+                        co2c: el.co2c,
+                    }
+                }
+            },
+            update: {
+                readings: {
+                    create: {
+                        timestamp: el.time,
+                        temp: el.temp,
+                        rehu: el.rehu,
+                        co2c: el.co2c,
+                    }
+                }
+            }
+        })
+
+    })
+}
