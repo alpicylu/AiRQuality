@@ -24,6 +24,7 @@ model Reading {
 model Sensor {
   id String @id @default(auto()) @map("_id") @db.ObjectId
 
+  iqrfID Int
   name     String    @unique
   readings Reading[]
 }

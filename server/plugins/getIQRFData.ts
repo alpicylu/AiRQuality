@@ -25,10 +25,15 @@ Catch as many records as you can and then filter them
 PLEASE DOCUMENT THIS CODE.
 */
 export default defineNitroPlugin(async (nitroApp) => {
-    //i need to make the 2 fetches synchronously, hence the "await" on the first one
-    //the upload request will not immediately return the data collected from the sensors - the content
-    //of "result" is either "OK;" or "ERROR;"
+
+    //scheduleJob will make the passed-in function run in a specified interval (every 15 mins)
     scheduleJob('*/1 * * * *', async () => {
+
+        /*The below fetch will basically tell the cloud server "call the GW and ask it to get data
+        from all sensors, then have it send that data back to the cloud"
+        If this operation succeedes, data from sensors will await on the server, waiting to be fetched.
+        This needs to be split into 2 fetches, because the response from this "uplc" fetch does not return sensor data,
+        only OK/ERROR response */
         var responseValid = await $fetch<string>(await constructURL("uplc"))
         .then(res => {
             return res === "OK;"
@@ -39,12 +44,22 @@ export default defineNitroPlugin(async (nitroApp) => {
 
         // const responseValid = true
 
+        /*If everything went smoothly during the last fetch, we are ready to get the aquired data from the cloud.
+        Problem is, theres an indeterminate winidow of time between the Gateway registering the "uplc" call, and data
+        actually being placed on the server - sending reqests to GW, polling sensors, getting that data to GW and sending it to server
+        all take time.
+        So what i did here is attempt to get the sensor data every 10 seconds and repeat this process up to 6 times
+        resulting in a max wait time of 1min. To achieve this behavior i needed to wrap the setInterval timer function
+        in a promise. Had i not wrapped it so, the timered function would not block, and i want it to block because i want
+        the server to wait for its data. */
         if (responseValid) await new Promise< (sensorDataType|null)[] >((resolve, reject) => {
             const repLimit = 6
             var reps = 0
             const repDelay = 1000*10
 
             //TODO make this into setTimeout loop
+            /*Ask the server for the data periodically. If data is delivered, cancel the timer and resolve the promise. 
+            Otherwise, repeat the request up to a limit, then reject the promise. */ 
             const intervalID = setInterval(async () => {
                 $fetch<string>(await constructURL("dnld"))
                 .then(res => {
@@ -65,9 +80,10 @@ export default defineNitroPlugin(async (nitroApp) => {
             }, repDelay)
         })
         .then(async (res)=> {
+            //If promise resolves, save fetched data to DB
             console.log(res)
             return await insertToDB(res)
-        })
+        })  //else, catch the rejection
         .catch(err=>console.log(err))
 
         return
@@ -75,6 +91,9 @@ export default defineNitroPlugin(async (nitroApp) => {
     })
 })
 
+/*To make any requests to the IQRF cloud server, we need a signature, which confirms the legitimacy of the request.
+It takes our API key, caller's IPv4 address, current timestamp seconds divided by 600 (valid for 10 mins) and the parameters
+we send with the request. We take all of those and mash them through the md5 hash function.*/
 async function constructSignature(parameter_part: string): Promise<string> {
     const api_key = apiKey
     const publicIPv4Address: string = await publicIpv4() //good
@@ -112,7 +131,10 @@ async function constructURL(command: string): Promise<string> {
     return `${base}${parameter_part}&signature=${signature}`
 }
 
-
+/*Data fetched from the server has the following format:
+RECORDS_MATCHED;;;\r\nINDEX;DATETIME;DATA\r\nINDEX...
+I use a series of RegExes to filter relevat data.
+ */
 function parseRawServerData(rawData: string): Array<sensorDataType | null> | null {
     console.log(rawData)
     if (rawData === "0;;;\r\n") return null //no new data on the server
@@ -120,8 +142,13 @@ function parseRawServerData(rawData: string): Array<sensorDataType | null> | nul
     var sensorDataObj: sensorDataType
     var results: Array<sensorDataType | null> = []
 
+    /*rawData is a string containing possibly many records. Every element in arr is one matched record.
+    Each sub-element in one matched record is the exact string matched + matched groups */
+    //           INDEX     DATE               TIME               DATA
     const re1 = /(\d+);(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2});([A-F0-9]+);/g
     const arr = [...rawData.matchAll(re1)]
+    //el[0] - the entire matched substring   el[1] - first matched group (record index)
+    //el[2] - second.... etc.
     arr.forEach((el, i, arr) => {
         const readings = parseSensorData(el[3])
         if (readings.length === 0){
@@ -129,8 +156,6 @@ function parseRawServerData(rawData: string): Array<sensorDataType | null> | nul
         }
         else {
             results.push(sensorDataObj = {
-                // time: new Date(el[2]).toISOString(),
-                // time: new Date(el[2]).toString(),
                 // time: new Date().toLocaleString([], {timeZone: "Poland"}), //not all browsers need to support timezones other than UTC
                 //the above converts well, but data needs to be stored in ISO format, and the above is not iso
                 //you could store in UTC and then display in local though.
@@ -167,12 +192,15 @@ function filterSensorData(rawSensor: string): boolean {
     return true 
 }
 
+/*From parseRawServerData this function gets a string of 20-40 haxadecimal characters (up to 64 Bytes, 128 chars)
+This string contains device ID, command that was issued, peripheral address, hardware profile, error code, DPA version
+and finally the data that was sent from the sensor. We pretty much only care about the data and sensor ID. */
 function parseSensorData(rawSensor: string): number[] {
     if (!filterSensorData(rawSensor)) return []
 
     //Look up the sensor's docs - to get temperature from "raw" reading, multiply it by 0.0625 (to get C)
     //for humidity (in %) mult by 0.5, etc.
-    //I am technically treating the ID of a sensor as a measurement and storing it as number, but the code is a bit cleaner that way
+    //I am technically treating the ID of a sensor as a measurement and storing it as number, but the code is a bit cleaner that way.
     //id, temperature, humidity, CO2, (optionally) battery
     const unitArray = [1, 0.0625, 0.5, 1, 1]
     //split the data field into frames: metadata, temp, rh, co2, and optionally battery
@@ -180,6 +208,9 @@ function parseSensorData(rawSensor: string): number[] {
     //indexes:       1                       2             3            4                      5
     //            sensorID          01     temp    80   humidity  02   co2          04      battery
     const re2 = /(\d{4})[A-F0-9]{12}01([A-F0-9]{4})80([A-F0-9]{2})02([A-F0-9]{4})(?:04(?<bat>[A-F0-9]{4}))?/g
+    /*The reason for this [0] is that matchAll technically expects more than one substring to find patterns in.
+    Since it gets only one string to work with, it will return matches only for this one string, resulting in
+    only one element on the first "layer" of the array */
     const arr2 = [...rawSensor.matchAll(re2)][0]
     const sensorReadings = arr2.slice(1,5)
     if (arr2.groups !== undefined && arr2.groups.bat !== null){
@@ -208,7 +239,7 @@ function parseSensorData(rawSensor: string): number[] {
 async function insertToDB(data: (sensorDataType | null)[]): Promise<void> {
     data.forEach(async (el, i, arr) => {
 
-        if (el !== null) await prisma.sensor.upsert({ //make this intu upsert 
+        if (el !== null) await prisma.sensor.upsert({
             where: { name: "C1 234" },
             create: {
                 name: "C1 234",
