@@ -42,6 +42,7 @@ export default defineEventHandler(async () => {
             where: { name: "C1 234" },
             create: {
                 name: "C1 234",
+                iqrfId: 1,
                 readings: {
                     create: { //can i reference TS values in Prisma queries?
                         timestamp: "2023-09-01T02:02:02.568Z",

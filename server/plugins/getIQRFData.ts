@@ -24,25 +24,25 @@ Catch as many records as you can and then filter them
 
 PLEASE DOCUMENT THIS CODE.
 */
-export default defineNitroPlugin(async (nitroApp) => {
+export default defineNitroPlugin((nitroApp) => {
 
     //scheduleJob will make the passed-in function run in a specified interval (every 15 mins)
-    scheduleJob('*/1 * * * *', async () => {
+    //TODO: what if the scheduled job is longer than the schedule interval? Then the scheduler will schedule a new job
+    //even if the previous one hasnt completed - more jobs will get started than the old ones get finished.
+    scheduleJob('*/10 * * * * *', async () => {
 
         /*The below fetch will basically tell the cloud server "call the GW and ask it to get data
         from all sensors, then have it send that data back to the cloud"
         If this operation succeedes, data from sensors will await on the server, waiting to be fetched.
         This needs to be split into 2 fetches, because the response from this "uplc" fetch does not return sensor data,
         only OK/ERROR response */
-        var responseValid = await $fetch<string>(await constructURL("uplc"))
+        var responseValid: boolean = await $fetch<string>(await constructURL("uplc"))
         .then(res => {
             return res === "OK;"
         }).catch(err=>{
             console.log(err)
             return false
         })
-
-        // const responseValid = true
 
         /*If everything went smoothly during the last fetch, we are ready to get the aquired data from the cloud.
         Problem is, theres an indeterminate winidow of time between the Gateway registering the "uplc" call, and data
@@ -53,7 +53,7 @@ export default defineNitroPlugin(async (nitroApp) => {
         in a promise. Had i not wrapped it so, the timered function would not block, and i want it to block because i want
         the server to wait for its data. */
         if (responseValid) await new Promise< (sensorDataType|null)[] >((resolve, reject) => {
-            const repLimit = 6
+            const repLimit = 3
             var reps = 0
             const repDelay = 1000*10
 
@@ -87,7 +87,6 @@ export default defineNitroPlugin(async (nitroApp) => {
         .catch(err=>console.log(err))
 
         return
-        
     })
 })
 
@@ -136,7 +135,9 @@ RECORDS_MATCHED;;;\r\nINDEX;DATETIME;DATA\r\nINDEX...
 I use a series of RegExes to filter relevat data.
  */
 function parseRawServerData(rawData: string): Array<sensorDataType | null> | null {
+    console.log("---raw server data---")
     console.log(rawData)
+    console.log("---raw server data---")
     if (rawData === "0;;;\r\n") return null //no new data on the server
 
     var sensorDataObj: sensorDataType
@@ -238,10 +239,10 @@ function parseSensorData(rawSensor: string): number[] {
 
 async function insertToDB(data: (sensorDataType | null)[]): Promise<void> {
     data.forEach(async (el, i, arr) => {
-
         if (el !== null) await prisma.sensor.upsert({
             where: { name: "C1 234" },
             create: {
+                iqrfId: 1,
                 name: "C1 234",
                 readings: {
                     create: { //can i reference TS values in Prisma queries?
