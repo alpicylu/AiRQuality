@@ -7,9 +7,13 @@ import { env } from 'node:process'
 import { apiKey, gid, uid } from "../API_key"
 import { sensorDataType } from "../../types/types"
 import { PrismaClient } from '@prisma/client'
+import { fail } from "node:assert";
 const prisma = new PrismaClient()
 
-prisma.reading.deleteMany()
+type Sensor = {
+    iqrfId: number,
+    name: string
+}
 //This is not secure, i know it, but cloud.iqrf's SSL cert has expired. With the certificate being not valid.
 //the only option is to not verify their validity.
 env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
@@ -24,70 +28,22 @@ Catch as many records as you can and then filter them
 
 PLEASE DOCUMENT THIS CODE.
 */
-export default defineNitroPlugin((nitroApp) => {
+export default defineNitroPlugin( async(nitroApp) => {
+
+    prisma.reading.deleteMany() 
+    //This list will be fetched only during the start of the server.
+    //and it makes sense, since the sensor list wont be updated often (sensors getting added/removed)
+    const sensorList = await getSensorList()
 
     //scheduleJob will make the passed-in function run in a specified interval (every 15 mins)
-    //TODO: what if the scheduled job is longer than the schedule interval? Then the scheduler will schedule a new job
-    //even if the previous one hasnt completed - more jobs will get started than the old ones get finished.
-    scheduleJob('*/10 * * * * *', async () => {
-
-        /*The below fetch will basically tell the cloud server "call the GW and ask it to get data
-        from all sensors, then have it send that data back to the cloud"
-        If this operation succeedes, data from sensors will await on the server, waiting to be fetched.
-        This needs to be split into 2 fetches, because the response from this "uplc" fetch does not return sensor data,
-        only OK/ERROR response */
-        var responseValid: boolean = await $fetch<string>(await constructURL("uplc"))
-        .then(res => {
-            return res === "OK;"
-        }).catch(err=>{
-            console.log(err)
-            return false
-        })
-
-        /*If everything went smoothly during the last fetch, we are ready to get the aquired data from the cloud.
-        Problem is, theres an indeterminate winidow of time between the Gateway registering the "uplc" call, and data
-        actually being placed on the server - sending reqests to GW, polling sensors, getting that data to GW and sending it to server
-        all take time.
-        So what i did here is attempt to get the sensor data every 10 seconds and repeat this process up to 6 times
-        resulting in a max wait time of 1min. To achieve this behavior i needed to wrap the setInterval timer function
-        in a promise. Had i not wrapped it so, the timered function would not block, and i want it to block because i want
-        the server to wait for its data. */
-        if (responseValid) await new Promise< (sensorDataType|null)[] >((resolve, reject) => {
-            const repLimit = 3
-            var reps = 0
-            const repDelay = 1000*10
-
-            //TODO make this into setTimeout loop
-            /*Ask the server for the data periodically. If data is delivered, cancel the timer and resolve the promise. 
-            Otherwise, repeat the request up to a limit, then reject the promise. */ 
-            const intervalID = setInterval(async () => {
-                $fetch<string>(await constructURL("dnld"))
-                .then(res => {
-                    const parsedData = parseRawServerData(res)
-                    if (parsedData !== null){
-                        clearInterval(intervalID)
-                        resolve(parsedData)
-                    }
-                    //++reps has to be the first operand (see AND docs)
-                    else if (++reps === repLimit && parsedData === null){
-                        clearInterval(intervalID)
-                        reject(`Fetching sensor data from server failed (${repLimit} retries)`)
-                    }
-                    return
-                })
-                .catch(err => console.log(err))
-
-            }, repDelay)
-        })
-        .then(async (res)=> {
-            //If promise resolves, save fetched data to DB
-            console.log(res)
-            return await insertToDB(res)
-        })  //else, catch the rejection
-        .catch(err=>console.log(err))
-
-        return
+    //node-schedule does not prevent callback overrun by itself - if the callback takes longer than the schedule
+    //interval, then a new task will begin before the previous one completed.
+    //Im handling this by manually timing out (returning) the task if getting data from the server takes too long.
+    //If the "dnld" command does not return within 6 retries, the callback returns with no response to the server
+    scheduleJob('*/10 * * * * *', () => {
+        pollSensors(sensorList)
     })
+
 })
 
 /*To make any requests to the IQRF cloud server, we need a signature, which confirms the legitimacy of the request.
@@ -114,9 +70,9 @@ async function constructURL(command: string): Promise<string> {
 
     switch (command){
         case "dnld":
-            // query.from = 95083 //hardcoded to always get this one record 
-            // query.to = 95086
-            query.new = 1 //cloud internally keeps track of the last record i pulled
+            query.from = 95083 //hardcoded to always get this one record 
+            query.to = 95086
+            // query.new = 1 //cloud internally keeps track of the last record i pulled
             // query.count = 1
             break
         case "uplc":
@@ -130,21 +86,121 @@ async function constructURL(command: string): Promise<string> {
     return `${base}${parameter_part}&signature=${signature}`
 }
 
+/*This function will fetch relevant data (room and iqrfID) of all sensors from the DB */
+async function getSensorList(): Promise<Sensor[]> {
+    const sensors: Sensor[] = await prisma.sensor.findMany({
+        select: {
+            iqrfId: true,
+            name: true
+        }
+    })
+    return sensors
+}
+
+async function pollSensors(sensorList: Sensor[]) {
+
+    //TODO make it so that if at least one fetch passes, the function continues and informs on
+    //which sensors failed
+    //fire off all fetches in a loop and wait untill all return
+    //maybe use Promise.all()?
+    var atLeastOnePassed: boolean = false
+    var failedRequests: Sensor[] = []
+    await Promise.all(
+        sensorList.map(async (sensor) => $fetch<string>(await constructURL("uplc"), {retry: 3, retryDelay: 1000}))
+    )
+    .then((res) => { //res as an array of values resolved from all provided Promises.
+        //check if at lest one promise resolved with "OK;"
+        //this will return true if at least 1 request produced "OK;"
+        // return res.some( (el) => el === "OK;" )
+        res.forEach((el, i, self) => {
+            atLeastOnePassed = atLeastOnePassed || (el === "OK;")
+            //EDIT: the order of fulfillment is the order the promises were passed, so i can use the "i" index.
+            if (el !== "OK;") failedRequests.push(sensorList.at(i))
+        })
+    })
+    .catch((err) => {
+        console.log("The IQRFCloud could not properly recieve the data upload request for any of the sensors")
+        console.log(err)
+        return false
+    }) 
+    
+    /*The below fetch will basically tell the cloud server "call the GW and ask it to get data
+    from all sensors, then have it send that data back to the cloud"
+    If this operation succeedes, data from sensors will await on the server, waiting to be fetched.
+    This needs to be split into 2 fetches, because the response from this "uplc" fetch does not return sensor data,
+    only OK/ERROR response */
+    var responseValid: boolean = await $fetch<string>(await constructURL("uplc"), {retry: 3, retryDelay: 1000})
+    .then(res => {
+        return res === "OK;"
+    }).catch(err=>{
+        console.log(err)
+        return false
+    })
+
+    // const responseValid = true
+
+    /*If everything went smoothly during the last fetch, we are ready to get the aquired data from the cloud.
+    Problem is, theres an indeterminate winidow of time between the Gateway registering the "uplc" call, and data
+    actually being placed on the server - sending reqests to GW, polling sensors, getting that data to GW and sending it to server
+    all take time.
+    So what i did here is attempt to get the sensor data every 10 seconds and repeat this process up to 6 times
+    resulting in a max wait time of 1min. To achieve this behavior i needed to wrap the setInterval timer function
+    in a promise. Had i not wrapped it so, the timered function would not block, and i want it to block because i want
+    the server to wait for its data. */
+    if (responseValid) await new Promise< (sensorDataType|null)[] >((resolve, reject) => {
+        const repLimit = 3
+        var reps = 0
+        const repDelay = 1000*10
+
+        //TODO make this into setTimeout loop
+        /*Ask the server for the data periodically. If data is delivered, cancel the timer and resolve the promise. 
+        Otherwise, repeat the request up to a limit, then reject the promise. */ 
+        const intervalID = setInterval(async () => {
+            $fetch<string>(await constructURL("dnld"))
+            .then(res => {
+                const parsedData = parseRawServerData(res)
+                if (parsedData !== null){
+                    clearInterval(intervalID)
+                    resolve(parsedData)
+                }
+                //++reps has to be the first operand (see AND docs)
+                else if (++reps === repLimit && parsedData === null){
+                    clearInterval(intervalID)
+                    reject(`Fetching sensor data from server failed (${repLimit} retries)`)
+                }
+                return
+            })
+            .catch(err => console.log(err))
+
+        }, repDelay)
+    })
+    .then(async (res)=> {
+        //If promise resolves, save fetched data to DB
+        console.log(res)
+        return await insertToDB(res)
+    })  //else, catch the rejection
+    .catch(err=>console.log(err))
+
+    return
+}
+
 /*Data fetched from the server has the following format:
 RECORDS_MATCHED;;;\r\nINDEX;DATETIME;DATA\r\nINDEX...
-I use a series of RegExes to filter relevat data.
+I use a series of RegExes to filter relevat data. A singular data-string can contain data from multiple sensors
+so i need to filter them out and extract the data.
  */
 function parseRawServerData(rawData: string): Array<sensorDataType | null> | null {
-    console.log("---raw server data---")
+    console.log("V--raw server data--V")
     console.log(rawData)
-    console.log("---raw server data---")
+    console.log("^--raw server data--^")
     if (rawData === "0;;;\r\n") return null //no new data on the server
 
     var sensorDataObj: sensorDataType
     var results: Array<sensorDataType | null> = []
-
+    
     /*rawData is a string containing possibly many records. Every element in arr is one matched record.
-    Each sub-element in one matched record is the exact string matched + matched groups */
+    Each element in one matched record is the exact string matched + matched groups.
+    For instance, arr[0][0] is the substring that contained the matched regex*/
     //           INDEX     DATE               TIME               DATA
     const re1 = /(\d+);(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2});([A-F0-9]+);/g
     const arr = [...rawData.matchAll(re1)]
@@ -237,6 +293,13 @@ function parseSensorData(rawSensor: string): number[] {
     return result
 }
 
+/*This server can get multiple data-bearing responses per request, so multiple records can be saved to DB at a time.
+Every record that was transmited to the cloud (those marked as "Rx" in the iqrf cloud admin page) is downloaded.
+Not every record contains useful data - some records basically tell the cloud, that a request was sent to the GW - those are useless to us.
+After download the plugin determines which records contain sensor data, and which dont. Those that dont are simply 
+represented as null. Those that do are treated as an object of type "sensorDataType"
+Here, we get an array of data-bearing-objects and nulls (nulls are the boring, data-less records from IQRFCloud).
+The interesting objects are saved to the DB. */
 async function insertToDB(data: (sensorDataType | null)[]): Promise<void> {
     data.forEach(async (el, i, arr) => {
         if (el !== null) await prisma.sensor.upsert({
@@ -264,6 +327,5 @@ async function insertToDB(data: (sensorDataType | null)[]): Promise<void> {
                 }
             }
         })
-
     })
 }
