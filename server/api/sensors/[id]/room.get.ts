@@ -9,21 +9,22 @@ The ID specified cannot be parsed to an Int
 The ID can be parsed to Int but sensor of that ID does not exist. */
 export default defineEventHandler(async (event) => {
     const sensorID: string | undefined = getRouterParam(event, 'id')
+    
     if (sensorID === undefined) throw createError({
         statusCode: 400,
         statusMessage: "Sensor ID route parameter is undefined"
     })
 
-    const sensorIntID: number = parseInt(sensorID, 10)
-    if (Number.isNaN(sensorIntID)) throw createError({
-        statusCode: 400,
-        statusMessage: "Sensor ID route parameter is not numeric"
-    })
+    const sensorIqrfId = idToIqrf(sensorID)
+    // if (Number.isNaN(sensorIntID)) throw createError({
+    //     statusCode: 400,
+    //     statusMessage: "Sensor ID route parameter is not numeric"
+    // })
 
     try {
         const data = await prisma.sensor.findUnique({
             where: {
-                iqrfId: sensorIntID
+                iqrfId: sensorIqrfId
             },
             select: {
                 name: true
@@ -41,3 +42,10 @@ export default defineEventHandler(async (event) => {
     
 
 })
+
+function idToIqrf(id: string): string{
+    const idNum: number = parseInt(id)
+    const idHex = idNum.toString(16).padStart(4, '0')
+    const res = idHex.replace(/([A-Fa-f0-9]{2})([A-Fa-f0-9]{2})/g, "$2$1")
+    return res
+}

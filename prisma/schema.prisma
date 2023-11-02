@@ -24,7 +24,7 @@ model Reading {
 model Sensor {
   id String @id @default(auto()) @map("_id") @db.ObjectId //the random, hexadecimal string
 
-  iqrfId   Int       @unique //ID assigned by bonding to the Gateway
+  iqrfId   String       @unique //ID assigned by bonding to the Gateway
   name     String    @unique
   readings Reading[]
 }
