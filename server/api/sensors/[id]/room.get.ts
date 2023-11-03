@@ -15,16 +15,10 @@ export default defineEventHandler(async (event) => {
         statusMessage: "Sensor ID route parameter is undefined"
     })
 
-    const sensorIqrfId = idToIqrf(sensorID)
-    // if (Number.isNaN(sensorIntID)) throw createError({
-    //     statusCode: 400,
-    //     statusMessage: "Sensor ID route parameter is not numeric"
-    // })
-
     try {
         const data = await prisma.sensor.findUnique({
             where: {
-                iqrfId: sensorIqrfId
+                iqrfId: sensorID
             },
             select: {
                 name: true
@@ -39,13 +33,4 @@ export default defineEventHandler(async (event) => {
             statusMessage: `Prisma encountered an error while fetching records from the database: ${prismaErrCode}`,
         })
     }
-    
-
 })
-
-function idToIqrf(id: string): string{
-    const idNum: number = parseInt(id)
-    const idHex = idNum.toString(16).padStart(4, '0')
-    const res = idHex.replace(/([A-Fa-f0-9]{2})([A-Fa-f0-9]{2})/g, "$2$1")
-    return res
-}

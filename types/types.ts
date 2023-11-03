@@ -22,5 +22,5 @@ export interface sensorDataType {
     temp: number,
     rehu: number,
     co2c: number,
-    id: string //TODO get rid of the id property - Mongo generates its own IDs
+    id: string 
 }

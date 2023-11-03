@@ -6,13 +6,10 @@ import { stringify } from 'node:querystring'
 import { env } from 'node:process'
 import { apiKey, gid, uid } from "../API_key"
 import { sensorDataType } from "../../types/types"
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Sensor } from '@prisma/client'
 const prisma = new PrismaClient()
 
-type Sensor = {
-    iqrfId: string,
-    name: string
-}
+const FRONT_DEV_MODE = true
 
 //TODO TOP LEVEL AWAIT NOT PERMISSIBLE
 var sensorList: Sensor[] //gets a list of all available sensors
@@ -30,17 +27,20 @@ Catch as many records as you can and then filter them
 */
 export default defineNitroPlugin( async(nitroApp) => {
 
-    await prisma.reading.deleteMany({}) 
+    if (!FRONT_DEV_MODE) {
+        await prisma.reading.deleteMany({}) 
 
-    sensorList = await getSensorList()
-    //scheduleJob will make the passed-in function run in a specified interval (every 15 mins)
-    //node-schedule does not prevent callback overrun by itself - if the callback takes longer than the schedule
-    //interval, then a new task will begin before the previous one completed.
-    //Im handling this by manually timing out (returning) the task if getting data from the server takes too long.
-    //If the "dnld" command does not return within 6 retries, the callback returns with no response to the server
-    scheduleJob('*/5 * * * *', () => {
-        pollSensors()
-    })
+        sensorList = await getSensorList()
+        //scheduleJob will make the passed-in function run in a specified interval (every 15 mins)
+        //node-schedule does not prevent callback overrun by itself - if the callback takes longer than the schedule
+        //interval, then a new task will begin before the previous one completed.
+        //Im handling this by manually timing out (returning) the task if getting data from the server takes too long.
+        //If the "dnld" command does not return within 6 retries, the callback returns with no response to the server
+        scheduleJob('*/2 * * * *', () => {
+            pollSensors()
+        })
+    
+    }
 
 })
 
@@ -71,8 +71,8 @@ async function constructURL(command: string, sensorIqrfId?: string): Promise<str
 
     switch (command){
         case "dnld":
-            // query.from = 95083 //hardcoded to always get this one record 
-            // query.to = 95086
+            // query.from = 95344 //hardcoded to always get this one record 
+            // query.to = 95348
             query.new = 1 //cloud internally keeps track of the last record i pulled
             // query.count = 1
             break
@@ -91,10 +91,10 @@ async function constructURL(command: string, sensorIqrfId?: string): Promise<str
 /*This function will fetch relevant data (room and iqrfID) of all sensors from the DB */
 async function getSensorList(): Promise<Sensor[]> {
     const sensors: Sensor[] = await prisma.sensor.findMany({
-        select: {
-            iqrfId: true,
-            name: true
-        }
+        // select: {
+        //     iqrfId: true,
+        //     name: true
+        // }
     })
     return sensors
 }
@@ -103,9 +103,15 @@ async function getSensorList(): Promise<Sensor[]> {
 //but no sensor data were recieved - uplc was OK but i havnt fetched dnld for the sensor i polled.
 async function pollSensors() {
 
+    /*The below fetch will basically tell the cloud server "call the GW and ask it to get data
+    from all sensors, then have it send that data back to the cloud"
+    If this operation succeedes, data from sensors will await on the server, waiting to be fetched.
+    This needs to be split into 2 fetches, because the response from this "uplc" fetch does not return sensor data,
+    only OK/ERROR response */
     var atLeastOnePassed: boolean = false
     var failedRequests: Sensor[] = []
     await Promise.all(
+        //returns an array of fetch promises
         sensorList.map(async (sensor) => $fetch<string>(await constructURL("uplc", sensor.iqrfId), {retry: 3, retryDelay: 1000}))
     )
     .then((res) => { //res is an array of values resolved from all provided Promises.
@@ -127,19 +133,6 @@ async function pollSensors() {
         console.log("Some uplc requests failed:")
         console.log(failedRequests)
     }
-    
-    /*The below fetch will basically tell the cloud server "call the GW and ask it to get data
-    from all sensors, then have it send that data back to the cloud"
-    If this operation succeedes, data from sensors will await on the server, waiting to be fetched.
-    This needs to be split into 2 fetches, because the response from this "uplc" fetch does not return sensor data,
-    only OK/ERROR response */
-    // var responseValid: boolean = await $fetch<string>(await constructURL("uplc"), {retry: 3, retryDelay: 1000})
-    // .then(res => {
-    //     return res === "OK;"
-    // }).catch(err=>{
-    //     console.log(err)
-    //     return false
-    // })
 
     /*If everything went smoothly during the last fetch, we are ready to get the aquired data from the cloud.
     Problem is, theres an indeterminate winidow of time between the Gateway registering the "uplc" call, and data
@@ -212,17 +205,6 @@ function parseRawServerData(rawData: string): Array<sensorDataType | null> | nul
         var readings = parseSensorData(el[3])
         if (readings !== null) readings.time = new Date(el[2]).toISOString() //overriding the PLACEHOLDER
         results.push(readings)
-        // if (readings === null){
-        //     results.push(null)
-        // }
-        // else {
-        //     results.push(
-        //         // time: new Date().toLocaleString([], {timeZone: "Poland"}), //not all browsers need to support timezones other than UTC
-        //         //the above converts well, but data needs to be stored in ISO format, and the above is not iso
-        //         //you could store in UTC and then display in local though.
-        //         readings
-        //     )
-        // }
     })
     return results
 }
@@ -236,17 +218,8 @@ function filterSensorData(rawSensor: string): boolean {
     const matches = [...rawSensor.matchAll(filterRex)][0]
     if (matches === undefined) return false //if matchAll does not find a match, it returns an empty list. Indexing an empty list results in undef.
 
-    //TODO: at this point it should read the list of all available sensors from the db (0001, 0002, 0003, 0004)
-    //and compare it with the \d{4}.
-    // if (matches[1] !== "0100") return false
-    
     //make a list of iqrfId from the sensor array and check if the fetched sensor is on said list.
     if (!sensorList.map((sensor) => sensor.iqrfId).includes(matches[1])) return false
-    //the below checks are useless - the string would just not match if any of those was false
-    //the regex would return an empty list, since we are trying to match some parts literally (5E81, etc)
-    // if (matches[2] !== "5E81") return false
-    // if (matches[3] !== "0140" && matches[3] !== "0150") return false
-    // if (matches[4] !== "00") return false
 
     return true 
 }
@@ -259,8 +232,7 @@ function parseSensorData(rawSensor: string): sensorDataType | null {
 
     //Look up the sensor's docs - to get temperature from "raw" reading, multiply it by 0.0625 (to get C)
     //for humidity (in %) mult by 0.5, etc.
-    //I am technically treating the ID of a sensor as a measurement and storing it as number, but the code is a bit cleaner that way.
-    //id, temperature, humidity, CO2, (optionally) battery
+    //temperature, humidity, CO2, (optionally) battery
     const unitArray = [0.0625, 0.5, 1, 1]
     var sensorId: string = ""
     //split the data field into frames: metadata, temp, rh, co2, and optionally battery
@@ -274,7 +246,7 @@ function parseSensorData(rawSensor: string): sensorDataType | null {
     const arr2 = [...rawSensor.matchAll(re2)][0] 
     sensorId = arr2[1] //arr2[0] is the entire substring that matched the regex
     const sensorReadings = arr2.slice(2,5) //we omit sensorID because we dont want to cahnge it at all - it gets added later
-    if (arr2.groups !== undefined && arr2.groups.bat !== null){
+    if (arr2.groups?.bat !== undefined){
         sensorReadings.push(arr2.groups.bat) //TODO: test if this clause is robust
     }
 
@@ -295,7 +267,7 @@ function parseSensorData(rawSensor: string): sensorDataType | null {
     })
 
     const result: sensorDataType = {
-        time: "PLACEHOLDER", //!!!!!!!!!!!!!!!!!!!!!!!!This has to be data from iqrf cloud. Afterall, this server can fetch historical data.
+        time: "PLACEHOLDER",
         id: sensorId,
         temp: valuesDecimal[0],
         rehu: valuesDecimal[1],
@@ -314,23 +286,37 @@ Here, we get an array of data-bearing-objects and nulls (nulls are the boring, d
 The interesting objects are saved to the DB. */
 async function insertToDB(data: (sensorDataType | null)[]): Promise<void> {
 
-    data.forEach(async (el, i, arr) => {
-        if (el !== null) {
-            console.log("Saving to db")
-            console.log(el)
-            await prisma.sensor.update({
-                where: { iqrfId: el.id},
-                data: {
-                    readings: {
-                        create: {
-                            timestamp: el.time,
-                            temp: el.temp,
-                            rehu: el.rehu,
-                            co2c: el.co2c,
-                        }
-                    }
-                }
+    await Promise.all(
+        data.map((element) => {
+            if (element !== null)
+                return $fetch(`/api/sensors/${element.id}/readings`, {
+                    method: 'POST',
+                    body: element
             })
-        }
+        })
+    )
+    .then(res => console.log("Sensor readings updated"))
+    .catch(err => {
+        console.log("Some sensor data failed to be saved to DB")
+        console.log(err)
     })
+
+
+    // data.forEach(async (el, i, arr) => {
+    //     if (el !== null) {
+    //         await prisma.sensor.update({
+    //             where: { iqrfId: el.id},
+    //             data: {
+    //                 readings: {
+    //                     create: {
+    //                         timestamp: el.time,
+    //                         temp: el.temp,
+    //                         rehu: el.rehu,
+    //                         co2c: el.co2c,
+    //                     }
+    //                 }
+    //             }
+    //         })
+    //     }
+    // })
 }
