@@ -24,3 +24,7 @@ logs
 API_key.ts
 
 test.*
+
+
+#Latex
+/Thesis/latex_temp/

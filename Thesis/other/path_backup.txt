@@ -1,0 +1,8 @@
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/snap/bin
+
+$PATH saved in .zshrc
+
+https://stackoverflow.com/questions/68179318/recipe-terminated-with-fatal-error-spawn-latexmk-enoent 
+
+install latexmk
+
