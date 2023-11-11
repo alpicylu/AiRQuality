@@ -1,0 +1,30 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model Reading {
+  id String @id @default(auto()) @map("_id") @db.ObjectId
+
+  timestamp DateTime
+  temp      Float
+  rehu      Float
+  co2c      Int
+  sensor    Sensor   @relation(fields: [sensorId], references: [id])
+  sensorId  String   @db.ObjectId
+}
+
+model Sensor {
+  id String @id @default(auto()) @map("_id") @db.ObjectId //the random, hexadecimal string
+
+  iqrfId   String       @unique //ID assigned by bonding to the Gateway (in hexadec, byte-swapped)
+  name     String    @unique
+  readings Reading[]
+}
