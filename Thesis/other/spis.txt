@@ -1,0 +1,37 @@
+Aplikacja webowa do prezentacji graficznej danych z systemu czujnikow jakości powietrza
+
+Spis treści
+
+Spis skrótów i akronimów
+    * opisanie w formie listy wszystkich kluczowych terminów, które pojawiają się w pracy (serwer IQRF cloud, Czujnik, Bramka, Frontend, Framework, etc.)
+
+1. Wstęp 
+    * cel pracy, motywacja
+    * krótkie streszczenie pracy
+
+2. Analiza jakości powietrza
+    * opis parametrów jakości powietrza oraz ich wartości zapewniających komfort człowiekowi
+    * wpływ niskiej jakości powietrza na człowieka
+
+3. Bezprzewodowy system monitoringu parametrów jakości powietrza 
+    * czujniki i bramka IQRF
+    * serwer IQRF Cloud
+    *opis sieci, konfiguracja topologia
+    * opis działania systemu czujników
+    *  w jaki sposób elementy ze sobą współgrają (API, protokół DPA, IQRF Cloud...)
+
+
+4. Projekt aplikacji webowej do prezentacji graficznej parametrów jakości powietrza 
+Zastosowane technologie
+    * jakie frameworki oraz biblioteki zostały użyte w aplikacji
+    * uzasadnienie wyborów
+    * opis działania elementów aplikacji webowej
+    * prezentacja widoków aplikacji webowej
+
+5. Prezentacja wyników
+Obserwacje
+    * zalety i wady rozwiązania
+    * działanie aplikacji podczas testów
+    * dyskusja o rozwoju projektu
+
+Bibliografia
