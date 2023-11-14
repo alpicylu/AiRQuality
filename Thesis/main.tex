@@ -139,10 +139,106 @@ posiada gniazdo karty SD jako jedną z opcji zapisu danych. Bramka posiada wbudo
 
 [ZDJ]
 
+TUTAJ NAPISZ O SAMYCH KOSTKACH IQRF - WERSJE OS, DPA, ETC.
+
+\subsubsection{Konfiguracja czujników}
+
+PYTANIE: czy transceivery IQRF trzeba było dodatkowo konfigurować, czy one w ogóle były w zestawie z czujnikami?
+ODP.: W dokumentacji protronixa mamy "The factory produces IQRF modules in sensors with the following configuration:" więc założę, że
+mamy w zestawie i skonfiguroane
+
+Do konfiguracji urządzeń wchodzących w skład sieci posłużono się narzędziem IQRF IDE w wersji 4.70. Narzędzie to umożliwia między 
+innymi konfigurację modułów IQRF TR zawartych w urządzeniach oraz odczyt pewnych danych o transceiverach IQRF, takich jak wersja 
+ssy 
+
+Bramka datalogger
+
 \subsection{Serwer IQRF Cloud}
 
-IQRF Cloud jest serwisem w chmurze umożliwiającym komunikację z bramką IQRF po jej zarejestrowaniu w tymże serwisie. Po rejestracji serwis umożliwia
+IQRF Cloud jest serwisem w chmurze umożliwiającym komunikację z bramką IQRF po jej zarejestrowaniu w tymże serwisie, w którym uprzednio należy
+założyć konto. Po rejestracji serwis umożliwia obustronną komunikację z urządzeniem w postaci wiadomości protokołu DPA. Aby takową nadać należy 
+wejść w panel zarejestrowanej bramki i wybrać opcję "Send data to gateway":
 
+[OPCJA]
+
+Po wybraniu tej opcji otrzymujemy widok umożliwiający wysyłanie do brami wiadomości protokołem DPA, a każde nadanie wymaga dodatkowo podania
+hasła do bramki wybieranego na etapie konfiguracji
+
+[EKRAN NADAWANIA WIADOMOŚCI]
+
+Dane odbierane/wysyłane przez serwer i bramkę są widoczne w panelu głównym odpowiednim dla bramki. Każdy rekord składa się z indeksu, czasu
+otrzymania przez serwer i bramkę, kierunku przesyłu danych (transmisja a odbiór), długości przesłanych danych w bajtach, przesłanych danych
+w postaci ciągu znaków 0-9 A-F 
+
+Każdy rekord skład się z:
+\begin{itemize}
+    \item indeksu 
+    \item czasu otrzymania przez serwer i bramkę
+    \item kierunku przesyłu danych (transmisja a odbiór)
+    \item długości danych wyrażonej w bajtach 
+    \item samych danych w formacie szesnastkowym (znaki 0-9 i A-F)
+    \item statusu odebrania przez bramkę (Sent, Confirmed, Expired...)
+    \item indeksu w bazie danych serwera.
+\end{itemize}
+
+Powyższy panel jednak stanowi dla tej pracy bardziej narzędzie diagnostyczne niż kluczowy element działania systemu - z poziomu działania aplikacji
+webowej nie da się wejść w interakcję z tym panelem, a przynajmniej nie jest to przewidziane. Serwis udostępnia więc własny interfejs 
+programistyczny (API), który umożliwia przesyłanie zapytań z innego urządzenia do tego serwisu i w konsekwencji do bramki oraz czujników.
+
+Każde zapytanie wysyłane do serwera składa się z adresu bazowego na jaki przesyłamy zapytania, wymaganych i opcjonalnych parametrów oraz tzw. 
+sygnatury. Adresem bazowym na dzień pisania pracy jest \textbf{https://cloud.iqrf.org/api/api.php?}.
+
+\subsubsection{Parametry wymagane i opcjonalne}
+
+Wyczerpująca lista parametrów wymaganych prezentuje się następująco:
+
+\begin{itemize}
+    \item ver - aktualna wersja API. W trakcie pisania pracy jest to "2" 
+    \item uid - login użytkownika do serwisu IQRF Cloud
+    \item gid - ID zarejestrowanej bramki, z którą chcemy się komunikować. Widoczne zarówno w portalu jak i na obudowie bramki
+    \item gpw - hasło do bramki. Wymagane jedynie w przypadku stosowania komendy "add"
+    \item cmd - jedna z komend: dnld, uplc, dnlc
+    \item data - dane do przesłania do bramki
+    \item signature - podpis potwierdzający użytkownika.
+\end{itemize}
+
+Parametry opcjonalne dają kontrolę nad ilością pobieranych danych. Lista wyczerpująca:
+
+\begin{itemize}
+    \item from - indeks pierwszego rekordu, który chcemy pobrać
+    \item to - indeks ostatniego rekordu, który chcemy pobrać
+    \item count - ilość pobieranych rekordów
+    \item time\_from - data utworzenia pierwszego rekordu, który chcemy pobrać 
+    \item time\_to - data utworzenia ostatniego rekordu, który chcemy pobrać
+    \item new - pobieranie danych zaczynając od ostatniego pobranego rekordu
+    \item last - pobieranie rekordów zaczynając od najpóźniejszych
+\end{itemize}
+
+Bardziej szczegółowy opis wszystkich parametrów oraz ograniczenia w ich stosowaniu dostępne są w dokumentacji IQRF Cloud Serwer Technical Guide 
+\cite{iqrfcloud-guide}
+
+\subsubsection{Sygnatura zapytania}
+
+Jakakolwiek komunikacja z serwerem wymaga podaniu parametru \textbf{signature}, który gwarantuje bezpieczeństwo przesyłu danych przez API 
+potwierdzając prawo dostępu użytkownika do danych. Dokumentacja \cite{iqrfcloud-guide} definiuje sygnaturę następująco:
+
+[ZDJ MD5]
+
+Gdzie: 
+
+\begin{itemize}
+    \item parameter\_part - ciąg znaków adresu URL zapytania pomiędzy adresem bazowym a sygnaturą. Na przykład, dla zapytania \\
+"https://cloud.iqrf.org/api/api.php?ver=2\&uid=xxx\&gid=xxx\&cmd=dnld\&signature=xxx" \\ 
+wartość ta jest równa "ver=2\&uid=xxx\&gid=xxx\&cmd=dnld"
+    \item api\_key - klucz API dostępny po zalogowaniu się do portalu IQRF Cloud
+    \item ip\_address - adres IP klienta
+    \item timestamp - liczba sekund począwszy od 01.01.1970 00:00UTC podzielona przez 600. Podzielenie przez 600 zapewnia 10-minutową
+ważność każdej sygnatury.
+\end{itemize}
+
+"md5" jest zaś kryptograficzną funkcją haszującą. 
+
+[ZDJĘCIE KLUCZA API Z PANELU]
 
 \section{Bibliografia}
 
