@@ -51,7 +51,7 @@ Kolejnym dokumentem pomagającym przybliżyć komfortowy przedział temperatur w
 "Rozporządzenie Min. Infrastruktury z 12.04.2002 w sprawie warunków technicznych jakim powinny odpowiadać 
 budynki i ich usytuowanie", a dokładnie art. 134 punkt 2 \cite{rozp-bud}. Określono tam temperaturę na potrzeby obliczeń szczytowej 
 mocy cieplnej w pomieszczeniach zależnie od ich przeznaczenia.
-Dla przykładu, pomieszczenia przeznaczone na stały pobyt ludzi bez okryć zewnętrznych, niewykonujących 
+Dla przykładu, pomieszczenia przeznaczone na stały pobyt ludzi bez okryć zewnętrznych, nie wykonujących 
 w sposób ciągły pracy fizycznej posiadają temperaturę obliczeniową 20st.C:
 
 Potocznie zaś dla zastosowań codziennych przyjmuje się przedział 18-22 st.C.
@@ -123,7 +123,17 @@ IQRFMESH jest protokołem umożliwiającym, między innymi, zwiększenie zasięg
 Jest możliwe połączenie urządzeń bez wykorzystania tego protokołu, ale na potrzeby tej pracy jest to silnie zalecane. \cite{iqrfmesh} Urządzenia w 
 sieci IQRFMESH komunikują się poprzez protokół DPA, w której wiadomości są przesyłane w strukturze bajtowej \cite{dpa-guide}.
 
-[PRZYKŁAD WIADOMOŚCI]
+Każda z wiadomości przesyłanych protokołem składa się co najmniej z:
+\begin{itemize}
+    \item NADR - 2-bajtowy adres urządzenia docelowego
+    \item PNUM - 1-bajtowy adres urządzenia peryferialnego w urządzeniu docelowym. Peryferium może być na przykład czujnik temperatury bądź wbudowana dioda LED
+    \item PCMD - 1-bajtowa komenda, której wykonanie zleca się urządzeniu. 
+    \item HWPID - 1-bajtowy Identyfikator Profilu Urządzenia (HardWare Profile ID). Wartość stała określająca rodzaj/model urządzenia. Dla wykorzystywanych w projekcie
+czujników jest to "4001".
+\end{itemize}
+
+oraz opcjonalnie z pola DATA, które może zawierać maksymalnie 56 bajtów danych. Cała wiadomość, łącznie z obowiązkowymi parametrami wymienionymi wyżej nie może przekroczyć
+64 bajtów
 
 \subsection{Czujniki i bramka IQRF}
 
@@ -132,26 +142,72 @@ Każdy czujnik jest w stanie odczytać temperaturę, wilgotność względną ora
 bateryjnie poprzez dwie baterie AA 1.5V, a komunikacja odbywa się poprzez zamontowany w gnieździe nadajnikoodbiornik (transceiver) IQRF
 zamontowany w gnieździe SIM. Każdy taki sensor stanowi węzeł sieci IQRFMESH.
 
-[JAKIEŚ ZDJĘCIE]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{zdj/NLB-CO2RHT-5-IQRF.jpg}
+    \caption{Podglądowe zdjęcie wykorzystywanego czujnika}
+\end{figure}
 
 Koordynatorem sieci jest bramka GW-ETH02 zasilana sieciowo napięciem 5VDC. Urządzenie łączy się z Internetem poprzez gniazdo Ethernet oraz
 posiada gniazdo karty SD jako jedną z opcji zapisu danych. Bramka posiada wbudowany transceiver IQRF.
 
-[ZDJ]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{zdj/gateway.png}
+    \caption{Podglądowe zdjęcie bramki}
+\end{figure}
 
 TUTAJ NAPISZ O SAMYCH KOSTKACH IQRF - WERSJE OS, DPA, ETC.
 
-\subsubsection{Konfiguracja czujników}
-
-PYTANIE: czy transceivery IQRF trzeba było dodatkowo konfigurować, czy one w ogóle były w zestawie z czujnikami?
-ODP.: W dokumentacji protronixa mamy "The factory produces IQRF modules in sensors with the following configuration:" więc założę, że
-mamy w zestawie i skonfiguroane
+\subsubsection{Konfiguracja}
 
 Do konfiguracji urządzeń wchodzących w skład sieci posłużono się narzędziem IQRF IDE w wersji 4.70. Narzędzie to umożliwia między 
-innymi konfigurację modułów IQRF TR zawartych w urządzeniach oraz odczyt pewnych danych o transceiverach IQRF, takich jak wersja 
-ssy 
+innymi konfigurację modułów IQRF TR zawartych w urządzeniach oraz odczyt pewnych danych o transceiverach IQRF, takich jak wersja systemu
+operacyjnego czy protokołu DPA.
 
-Bramka datalogger
+Bramka może zostać pracować w dwóch trybach: Datalogger lub Gateway. Konfiguracja bramki jako Datalogger powoduje przesłanie wszystkich danych,
+wchodzących i wychodzących, do serwera IQRF Cloud. Z kolei konfiguracja bramki jako Gateway nie pozwala na korzystanie z IQRF Cloud, za to wymaga 
+zdalnego połączenia przez protokół UDP z urządzeniem końcowym.
+
+Jako, iż serwer IQRF Cloud zapewnia wygodę w postaci dobrze udokumentowanego API, możliwości interakcji z bramką z poziomu strony oraz swego
+rodzaju buffer w postaci 2000 rekordów, w pracy zdecydowano się użyć ustawienia Datalogger.
+
+Tego jak i innych potrzebnych ustawień można dokonać wybierając opcje TR Configuration w IQRF IDE podczas, gdy bramka jest fizycznie podłączona
+do komputera. Parametry bramki zostały ustawione na wartości przewidziane przez producenta czujników Protronix \cite{protronix-comms}. Upewniono 
+się również, że bramka będzie działała z urządzeniami LP (Low Power), poprzez wybranie na panelu odpowiedniego ustawienia sieci STD+LP.
+
+[ZDJĘCIE WYCINKA Z TYMI LICZBAMI]
+
+Następnie każdy z transceiverów przeznaczonych do montażu w czujnikach został tymczasowo zamontowany w programatorze CK-USB-04A będącego częścią
+zestawu IoT Starter Kit w celu sprawdzenia poprawności ustawień transceivera zgodnie z zaleceniami producenta.
+
+\subsubsection{Topologia sieci}
+
+To, w jakiej topologii będą pracowały czujniki sieci IQRF MESH zależy od odległości między czujnikiem a bramką. W przypadku 
+mniejszych dystansów wszystkie czujniki będą bezpośrednio połączone bezprzewodowo z bramką - topologia gwiazdy. Jeżeli natomiast
+odległości są znaczne niektóre węzły sieci mogą sprawować również funkcję routerów, przekierowujących pakiety między innymi 
+węzłami i bramką. W takim przypadku mamy do czynienie z topologią siatki (ang. mesh).
+
+[PODGLĄDOWE ZDJĘCIA OBU TOPOLOGI]
+\begin{figure}
+
+\centering
+\begin{subfigure}{0.4\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{zdj/star-top.png}
+    \caption{Topologia gwiazdy \cite{fig-star-top}}
+\end{subfigure}
+\begin{subfigure}{0.4\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{zdj/mesh-top.png}
+    \caption{Topologia sieci \cite{fig-mesh-top}}
+\end{subfigure}
+   
+\caption{Schematy porównujące obie topologie sieci}
+
+\end{figure}
+
+[ZDJĘCIE Z IQRF IDE PANEL MESH]
 
 \subsection{Serwer IQRF Cloud}
 
@@ -159,16 +215,23 @@ IQRF Cloud jest serwisem w chmurze umożliwiającym komunikację z bramką IQRF 
 założyć konto. Po rejestracji serwis umożliwia obustronną komunikację z urządzeniem w postaci wiadomości protokołu DPA. Aby takową nadać należy 
 wejść w panel zarejestrowanej bramki i wybrać opcję "Send data to gateway":
 
-[OPCJA]
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.4\textwidth]{zdj/send-command-to-gw.png}
+\end{figure}
 
 Po wybraniu tej opcji otrzymujemy widok umożliwiający wysyłanie do brami wiadomości protokołem DPA, a każde nadanie wymaga dodatkowo podania
 hasła do bramki wybieranego na etapie konfiguracji
 
-[EKRAN NADAWANIA WIADOMOŚCI]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/cloud-send-message.png}
+\end{figure}
 
-Dane odbierane/wysyłane przez serwer i bramkę są widoczne w panelu głównym odpowiednim dla bramki. Każdy rekord składa się z indeksu, czasu
-otrzymania przez serwer i bramkę, kierunku przesyłu danych (transmisja a odbiór), długości przesłanych danych w bajtach, przesłanych danych
-w postaci ciągu znaków 0-9 A-F 
+NAPISZ O LITTLE-ENDIANINESS
+
+Dane odbierane/wysyłane przez serwer i bramkę są widoczne w panelu głównym odpowiednim dla bramki. Na serwerze może istnieć jednocześnie tylko 2000
+rekordów. Po przekroczeniu tego limitu najstarsze dane są nadpisywane.
 
 Każdy rekord skład się z:
 \begin{itemize}
@@ -190,7 +253,7 @@ sygnatury. Adresem bazowym na dzień pisania pracy jest \textbf{https://cloud.iq
 
 \subsubsection{Parametry wymagane i opcjonalne}
 
-Wyczerpująca lista parametrów wymaganych prezentuje się następująco:
+Lista parametrów wymaganych prezentuje się następująco:
 
 \begin{itemize}
     \item ver - aktualna wersja API. W trakcie pisania pracy jest to "2" 
@@ -202,7 +265,7 @@ Wyczerpująca lista parametrów wymaganych prezentuje się następująco:
     \item signature - podpis potwierdzający użytkownika.
 \end{itemize}
 
-Parametry opcjonalne dają kontrolę nad ilością pobieranych danych. Lista wyczerpująca:
+Parametry opcjonalne dają zaś kontrolę nad ilością pobieranych danych:
 
 \begin{itemize}
     \item from - indeks pierwszego rekordu, który chcemy pobrać
@@ -222,7 +285,9 @@ Bardziej szczegółowy opis wszystkich parametrów oraz ograniczenia w ich stoso
 Jakakolwiek komunikacja z serwerem wymaga podaniu parametru \textbf{signature}, który gwarantuje bezpieczeństwo przesyłu danych przez API 
 potwierdzając prawo dostępu użytkownika do danych. Dokumentacja \cite{iqrfcloud-guide} definiuje sygnaturę następująco:
 
-[ZDJ MD5]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/md5.png}
+\end{figure}
 
 Gdzie: 
 
@@ -238,7 +303,40 @@ ważność każdej sygnatury.
 
 "md5" jest zaś kryptograficzną funkcją haszującą. 
 
-[ZDJĘCIE KLUCZA API Z PANELU]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/api-key.png}
+    \caption{Fragment widoku profilu użytkownika. Czerwoną strzałką wskazano klucz API.}
+\end{figure}
+
+\subsection{Aplikacja webowa}
+
+Aplikacja webowa stanowi centralny obiekt tej pracy i jest ostatnim elementem wchodzącym w skład systemu monitorowania danych
+z czujników. 
+
+Serwer tej aplikacji jest odpowiedzialny za wysyłanie zapytań do serwisu IQRF Cloud w celu poboru danych z czujników, pobieranie
+tych danych z serwisu, walidacje, filtrowanie, formatowanie i zapisywanie do bazy danych. Zapewnia również szereg ścieżek API pozwalających
+klientowi na interakcje z zasobami zapisanymi w bazie danych (odczyty z czujników i ich metadane).
+
+Klient natomiast zapewnia czytelny interfejs graficzny w postaci szeregu widoków umożliwiających przeglądanie aktualnych i 
+historycznych danych oraz ich pobieranie.
+
+Dokładniejszy opis działania aplikacji webowej zostanie przedstawiony w dalszej części pracy.
+
+\subsection{Opis działania całego systemu}
+
+Typowy cykl działania systemu trwa domyślnie 15 minut, a prezentuje się on następująco:
+
+\begin{enumerate}
+    \item Serwer aplikacji wysyła zapytanie do IQRF Cloud o pobranie danych z czujników.
+    \item IQRF cloud otrzymuje zapytanie o odczyt czujników i przekazuje je do bramki
+    \item Czujniki otrzymują wiadomość przesłaną przez bramkę i odsyłają odczyt z czujników z powrotem do bramki
+    \item Bramka przesyła odczyty do serwera IQRF Cloud gdzie są tymczasowo zapisywane.
+    \item Serwer aplikacji webowej wysyła kolejne zapytanie, tym razem o przesłanie danych z IQRF cloud
+do aplikacji.
+    \item Dane pobrane na serwer aplikacji są kolejno poddawane walidacji, filtrowaniu i formatowaniu.
+    \item Przygotowane dane są zapisywane w bazie danych 
+    \item Dane prezentowane na widokach ulegają odświeżeniu pod wpływem zmiany dostępnych danych.
+\end{enumerate}
 
 \section{Bibliografia}
 

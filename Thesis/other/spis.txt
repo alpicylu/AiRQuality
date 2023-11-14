@@ -14,11 +14,11 @@ Spis skrótów i akronimów
     * wpływ niskiej jakości powietrza na człowieka
 
 3. Bezprzewodowy system monitoringu parametrów jakości powietrza 
-    * czujniki i bramka IQRF
-    * serwer IQRF Cloud
-    *opis sieci, konfiguracja topologia
+    * czujniki i bramka IQRF    DONE
+    * serwer IQRF Cloud    DONE
+    * opis sieci, konfiguracja, topologia    DONE
     * opis działania systemu czujników
-    *  w jaki sposób elementy ze sobą współgrają (API, protokół DPA, IQRF Cloud...)
+    * w jaki sposób elementy ze sobą współgrają (API, protokół DPA, IQRF Cloud...)
 
 
 4. Projekt aplikacji webowej do prezentacji graficznej parametrów jakości powietrza 
