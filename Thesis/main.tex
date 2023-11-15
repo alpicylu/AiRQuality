@@ -7,7 +7,9 @@
 
 \vspace*{\fill}
 
-PLACEHOLDER
+\begin{center}
+    STRONA TYTUŁOWA
+\end{center}
 
 \vspace*{\fill}
 
@@ -26,9 +28,7 @@ Szczególnie narażone są kraje biedne i mniej rozwinięte technologicznie \cit
 Pomijając tak drastyczne przypadki zła kondycja powietrza może powodować szereg mniej 
 groźnych problemów zdrowotnych, takich jak pogorszenie zdolności rozwiązywania 
 problemów i podejmowanie decyzji \cite{co2-effects}, co w szczególności dotyka placówki oświatowe i 
-osoby tam przebywające. 
-
-Bacząc na powyższe, oraz na fakt że człowiek średnio spędza większość dnia w swoim 
+osoby tam przebywające. Bacząc na powyższe, oraz na fakt że człowiek średnio spędza większość dnia w swoim 
 domu \cite{time-indoors}, nie licząc takich aktywności jak praca w zamkniętym pomieszczeniu, nowoczesne 
 budynki powinny umożliwiać monitorowanie stanu powietrza wewnątrz 
 ich w celu lepszej kontroli nad ich jakością.
@@ -54,11 +54,16 @@ mocy cieplnej w pomieszczeniach zależnie od ich przeznaczenia.
 Dla przykładu, pomieszczenia przeznaczone na stały pobyt ludzi bez okryć zewnętrznych, nie wykonujących 
 w sposób ciągły pracy fizycznej posiadają temperaturę obliczeniową 20st.C:
 
-Potocznie zaś dla zastosowań codziennych przyjmuje się przedział 18-22 st.C.
+\begin{figure}[H]
+    \caption{Fragment tabeli z Rozporządzenia przedstawiający temperatury obliczeniowe dla niektórych typów pomieszczeń}
+    \includegraphics[width=\textwidth]{zdj/min-tabela.png}
+\end{figure}
 
 Za niska temperatura może powodować zwiększoną śmiertelność z powodu chorób układu oddechowego czy podwyższone 
 ciśnienie \cite{who-cold}. Za wysoka zaś oprócz oczywistego dyskomfortu może doprowadzić zwiększonej śmiertelności, 
-szczególnie u osób z chorobami układu oddechowego czy cierpiących na arytmię \cite{bmj-heat}
+szczególnie u osób z chorobami układu oddechowego czy cierpiących na arytmię \cite{bmj-heat}.
+
+W tej pracy za optymalny przedział temperatur przyjmuje się 18-22st. Celsjusza.
 
 \subsection{Wilgotność}
 
@@ -76,10 +81,13 @@ Podobnie jak temperatura, wilgotność zależy od wielu czynników i może zmien
 nawet w ciągu dnia. Wpływanie na wilgotność powietrza polega przede wszystkim na możliwości odczytu 
 jego aktualnej lub historycznej wartości.
 
-\begin{figure}[!h]
+\begin{figure}[H]
     \includegraphics[width=\textwidth]{zdj/wilgotnosc_powietrza_w_pomieszczeniach.jpg}
     \caption{Wpływ wilgotności powietrza na nasilenie poszczególnych czynników}
 \end{figure}
+
+W związku z powyższym za optymalny przedział przyjmuje się od 30\% do 50\% wilgotności względnej 
+powietrza.
 
 \subsection{Dwutlenek węgla}
 
@@ -102,10 +110,13 @@ ono nawet 50\% wyższe niż sprzed wspomnianej daty \cite{50-percent}. Stężeni
 wspomnianego wskaźnika Pettenkofera może powodować trudności w koncentracji, senność czy 
 trudności z oddychaniem \cite{pettenhofer}.
 
-\begin{figure}
-    \includegraphics[width=\textwidth]{zdj/more-co2.png}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{zdj/more-co2.png}
     \caption{Wzrost stężenia dwutlenku węgla w atmosferze na przestrzeni lat}
 \end{figure}
+
+Za optymalny przedział wartości zawartości dwutlenku węgla w powietrzu przyjmuje się 400-1000ppm.
 
 \section{Bezprzewodowy system monitoringu parametrów jakości powietrza}
 
@@ -120,7 +131,7 @@ master(koordynator) - slave(węzeł). Węzły nie mogą komunikować się ze sob
 Gwiazda (np. Mesh) węzły wspierają routowanie pakietów do innych węzłów \cite{iqrf-rules}.
 
 IQRFMESH jest protokołem umożliwiającym, między innymi, zwiększenie zasięgu sieci poprzez umożliwienie węzłom routowania pakietów.
-Jest możliwe połączenie urządzeń bez wykorzystania tego protokołu, ale na potrzeby tej pracy jest to silnie zalecane. \cite{iqrfmesh} Urządzenia w 
+Jest możliwe połączenie urządzeń bez wykorzystania tego protokołu, ale na potrzeby tej pracy jest to zalecane \cite{iqrfmesh}. Urządzenia w 
 sieci IQRFMESH komunikują się poprzez protokół DPA, w której wiadomości są przesyłane w strukturze bajtowej \cite{dpa-guide}.
 
 Każda z wiadomości przesyłanych protokołem składa się co najmniej z:
@@ -133,19 +144,44 @@ czujników jest to "4001".
 \end{itemize}
 
 oraz opcjonalnie z pola DATA, które może zawierać maksymalnie 56 bajtów danych. Cała wiadomość, łącznie z obowiązkowymi parametrami wymienionymi wyżej nie może przekroczyć
-64 bajtów
+64 bajtów 
+
+Przykład wiadomości:
+
+\begin{center}
+    \textbf{01005E010140FFFFFFFF}
+\end{center}
+
+jeżeli rozdzielimy ją na poszczególne parametry uzyskujemy:
+
+\begin{table}[h]
+    \centering
+    \begin{tabular}{|c|c|c|c|c|}
+    \hline
+    NADR & PNUM & PCMD & HWPID & DATA \\ \hline
+    0100 & 5E & 01 & 0140 & FFFFFFFF \\ \hline
+    \end{tabular}
+\end{table}
+
+Protokół DPA stosuje ustawienie bajtów typu little-endian. W związku z tym bajty każdego parametru dłuższego
+niż 2 bajty są pisane "od końca". Przykładowo, jeżeli chcemy zaadresować urządzenie o NADR równym "0001", to 
+do ramki wiadomości odpowiadającej temu adresowi wpisuje się "0100". Taka sama sytuacja ma miejsce z parametrem
+HWPID, który również ma długość większą niż 1 bajt.
+
+Powyższa wiadomość pochodzi z dokumentacji czujnika Protronix używanego w projekcie \cite{protronix-comms}, a jej 
+wysłanie powoduje zebranie z czujnika o adresie 0001 danych ze wszystkich dostępnych czujników - temperatury, 
+wilgotności, dwutlenku węgla i baterii, jeżeli jej stan jest niski.
 
 \subsection{Czujniki i bramka IQRF}
 
-Urządzeniami bezpośrednio odpowiedzialnymi za pobieranie z otoczenia danych o jakości powietrza są cztery czujniki NLB-CO2+RH+T-5-IQRF.
-Każdy czujnik jest w stanie odczytać temperaturę, wilgotność względną oraz zawartość dwutlenku węgla w powietrzu. Zasilanie jest zapewniane
-bateryjnie poprzez dwie baterie AA 1.5V, a komunikacja odbywa się poprzez zamontowany w gnieździe nadajnikoodbiornik (transceiver) IQRF
-zamontowany w gnieździe SIM. Każdy taki sensor stanowi węzeł sieci IQRFMESH.
+Urządzeniami bezpośrednio odpowiedzialnymi za pobieranie z otoczenia danych o jakości powietrza są cztery czujniki NLB-CO2+RH+T-5-IQRF firmy
+Protronix. Każdy czujnik jest w stanie odczytać temperaturę, wilgotność względną oraz zawartość dwutlenku węgla w powietrzu. Zasilanie jest zapewniane
+bateryjnie poprzez dwie baterie AA 1.5V, a komunikacja odbywa się poprzez zamontowany w gnieździe SIM nadajnikoodbiornik (transceiver) IQRF. Każdy taki sensor stanowi węzeł sieci IQRFMESH.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{zdj/NLB-CO2RHT-5-IQRF.jpg}
-    \caption{Podglądowe zdjęcie wykorzystywanego czujnika}
+    \caption{Podglądowe zdjęcie wykorzystywanego czujnika \cite{protronix-product}}
 \end{figure}
 
 Koordynatorem sieci jest bramka GW-ETH02 zasilana sieciowo napięciem 5VDC. Urządzenie łączy się z Internetem poprzez gniazdo Ethernet oraz
@@ -154,10 +190,8 @@ posiada gniazdo karty SD jako jedną z opcji zapisu danych. Bramka posiada wbudo
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{zdj/gateway.png}
-    \caption{Podglądowe zdjęcie bramki}
+    \caption{Podglądowe zdjęcie bramki \cite{gateway-product}}
 \end{figure}
-
-TUTAJ NAPISZ O SAMYCH KOSTKACH IQRF - WERSJE OS, DPA, ETC.
 
 \subsubsection{Konfiguracja}
 
@@ -165,7 +199,7 @@ Do konfiguracji urządzeń wchodzących w skład sieci posłużono się narzędz
 innymi konfigurację modułów IQRF TR zawartych w urządzeniach oraz odczyt pewnych danych o transceiverach IQRF, takich jak wersja systemu
 operacyjnego czy protokołu DPA.
 
-Bramka może zostać pracować w dwóch trybach: Datalogger lub Gateway. Konfiguracja bramki jako Datalogger powoduje przesłanie wszystkich danych,
+Bramka może pracować w dwóch trybach: Datalogger lub Gateway. Konfiguracja bramki jako Datalogger powoduje przesłanie wszystkich danych,
 wchodzących i wychodzących, do serwera IQRF Cloud. Z kolei konfiguracja bramki jako Gateway nie pozwala na korzystanie z IQRF Cloud, za to wymaga 
 zdalnego połączenia przez protokół UDP z urządzeniem końcowym.
 
@@ -176,10 +210,14 @@ Tego jak i innych potrzebnych ustawień można dokonać wybierając opcje TR Con
 do komputera. Parametry bramki zostały ustawione na wartości przewidziane przez producenta czujników Protronix \cite{protronix-comms}. Upewniono 
 się również, że bramka będzie działała z urządzeniami LP (Low Power), poprzez wybranie na panelu odpowiedniego ustawienia sieci STD+LP.
 
-[ZDJĘCIE WYCINKA Z TYMI LICZBAMI]
-
 Następnie każdy z transceiverów przeznaczonych do montażu w czujnikach został tymczasowo zamontowany w programatorze CK-USB-04A będącego częścią
 zestawu IoT Starter Kit w celu sprawdzenia poprawności ustawień transceivera zgodnie z zaleceniami producenta.
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\textwidth]{zdj/protronix-settings.png}
+    \caption{Fabryczna konfiguracja modułów TR. Wycinek z \cite{protronix-comms}}
+\end{figure}
 
 \subsubsection{Topologia sieci}
 
@@ -188,8 +226,7 @@ mniejszych dystansów wszystkie czujniki będą bezpośrednio połączone bezprz
 odległości są znaczne niektóre węzły sieci mogą sprawować również funkcję routerów, przekierowujących pakiety między innymi 
 węzłami i bramką. W takim przypadku mamy do czynienie z topologią siatki (ang. mesh).
 
-[PODGLĄDOWE ZDJĘCIA OBU TOPOLOGI]
-\begin{figure}
+\begin{figure}[H]
 
 \centering
 \begin{subfigure}{0.4\textwidth}
@@ -200,7 +237,7 @@ węzłami i bramką. W takim przypadku mamy do czynienie z topologią siatki (an
 \begin{subfigure}{0.4\textwidth}
     \centering
     \includegraphics[width=0.8\linewidth]{zdj/mesh-top.png}
-    \caption{Topologia sieci \cite{fig-mesh-top}}
+    \caption{Topologia siatki \cite{fig-mesh-top}}
 \end{subfigure}
    
 \caption{Schematy porównujące obie topologie sieci}
@@ -213,22 +250,21 @@ węzłami i bramką. W takim przypadku mamy do czynienie z topologią siatki (an
 
 IQRF Cloud jest serwisem w chmurze umożliwiającym komunikację z bramką IQRF po jej zarejestrowaniu w tymże serwisie, w którym uprzednio należy
 założyć konto. Po rejestracji serwis umożliwia obustronną komunikację z urządzeniem w postaci wiadomości protokołu DPA. Aby takową nadać należy 
-wejść w panel zarejestrowanej bramki i wybrać opcję "Send data to gateway":
-
+wejść w panel zarejestrowanej bramki i wybrać opcję "Send command to gateway":
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.4\textwidth]{zdj/send-command-to-gw.png}
+    \caption{Opcja "Send command to gateway"}
 \end{figure}
 
 Po wybraniu tej opcji otrzymujemy widok umożliwiający wysyłanie do brami wiadomości protokołem DPA, a każde nadanie wymaga dodatkowo podania
-hasła do bramki wybieranego na etapie konfiguracji
+hasła do bramki wybieranego na etapie konfiguracji.
 
 \begin{figure}[H]
     \includegraphics[width=\textwidth]{zdj/cloud-send-message.png}
+    \caption{Fragment panelu umożliwiający wysłanie danych z serwera chmury do bramki}
 \end{figure}
-
-NAPISZ O LITTLE-ENDIANINESS
 
 Dane odbierane/wysyłane przez serwer i bramkę są widoczne w panelu głównym odpowiednim dla bramki. Na serwerze może istnieć jednocześnie tylko 2000
 rekordów. Po przekroczeniu tego limitu najstarsze dane są nadpisywane.
@@ -243,6 +279,11 @@ Każdy rekord skład się z:
     \item statusu odebrania przez bramkę (Sent, Confirmed, Expired...)
     \item indeksu w bazie danych serwera.
 \end{itemize}
+
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/cloud-records.png}
+    \caption{Fragment tabeli otrzymanych wiadomości w IQRF Cloud}
+\end{figure}
 
 Powyższy panel jednak stanowi dla tej pracy bardziej narzędzie diagnostyczne niż kluczowy element działania systemu - z poziomu działania aplikacji
 webowej nie da się wejść w interakcję z tym panelem, a przynajmniej nie jest to przewidziane. Serwis udostępnia więc własny interfejs 
@@ -301,12 +342,22 @@ wartość ta jest równa "ver=2\&uid=xxx\&gid=xxx\&cmd=dnld"
 ważność każdej sygnatury.
 \end{itemize}
 
-"md5" jest zaś kryptograficzną funkcją haszującą. 
+'md5' jest zaś kryptograficzną funkcją haszującą, której argumentem jest wyżej przedstawiony ciąg znaków 
+
 
 \begin{figure}[H]
     \includegraphics[width=\textwidth]{zdj/api-key.png}
     \caption{Fragment widoku profilu użytkownika. Czerwoną strzałką wskazano klucz API.}
 \end{figure}
+
+Kompletne zapytanie składa się z adresu bazowego, ciągu parametrów oraz sygnatury. Na przykład:
+\begin{center}
+    \begin{small}
+        https://cloud.iqrf.org/api/api.php?ver=2\&uid=12345678\&gid=ABCD1234\&cmd=dnld\&signature=xxx"
+    \end{small}
+\end{center}
+
+jest ważnym zapytaniem API i spowoduje pobranie maksymalnie 500 rekordów z serwera, zakładając poprawność wszystkich parametrów.
 
 \subsection{Aplikacja webowa}
 
@@ -315,7 +366,8 @@ z czujników.
 
 Serwer tej aplikacji jest odpowiedzialny za wysyłanie zapytań do serwisu IQRF Cloud w celu poboru danych z czujników, pobieranie
 tych danych z serwisu, walidacje, filtrowanie, formatowanie i zapisywanie do bazy danych. Zapewnia również szereg ścieżek API pozwalających
-klientowi na interakcje z zasobami zapisanymi w bazie danych (odczyty z czujników i ich metadane).
+klientowi na interakcje z zasobami zapisanymi w bazie danych (odczyty z czujników i ich metadane). Zastosowanie bazy danych 
+jest konieczne ze względu na fakt, że serwis IQRF Cloud przechowuje tylko 2000 najnowszych rekordów.
 
 Klient natomiast zapewnia czytelny interfejs graficzny w postaci szeregu widoków umożliwiających przeglądanie aktualnych i 
 historycznych danych oraz ich pobieranie.
@@ -324,7 +376,7 @@ Dokładniejszy opis działania aplikacji webowej zostanie przedstawiony w dalsze
 
 \subsection{Opis działania całego systemu}
 
-Typowy cykl działania systemu trwa domyślnie 15 minut, a prezentuje się on następująco:
+Typowy cykl działania systemu jest wywoływany co 15 minut, a prezentuje się on następująco:
 
 \begin{enumerate}
     \item Serwer aplikacji wysyła zapytanie do IQRF Cloud o pobranie danych z czujników.
@@ -335,6 +387,7 @@ Typowy cykl działania systemu trwa domyślnie 15 minut, a prezentuje się on na
 do aplikacji.
     \item Dane pobrane na serwer aplikacji są kolejno poddawane walidacji, filtrowaniu i formatowaniu.
     \item Przygotowane dane są zapisywane w bazie danych 
+    \item Klient pobiera nowe dane z bazy
     \item Dane prezentowane na widokach ulegają odświeżeniu pod wpływem zmiany dostępnych danych.
 \end{enumerate}
 
