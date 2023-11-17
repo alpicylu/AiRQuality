@@ -5,8 +5,9 @@ import * as crypto from 'node:crypto'
 import { stringify } from 'node:querystring'
 import { env } from 'node:process'
 import { apiKey, gid, uid } from "../API_key"
-import { sensorDataType } from "../../types/types"
-import { PrismaClient, Sensor } from '@prisma/client'
+import type { SensorDataType } from "../../types/types"
+import { PrismaClient } from '@prisma/client'
+import type { Sensor } from '@prisma/client'
 const prisma = new PrismaClient()
 
 const FRONT_DEV_MODE = true
@@ -36,7 +37,7 @@ export default defineNitroPlugin( async(nitroApp) => {
         //interval, then a new task will begin before the previous one completed.
         //Im handling this by manually timing out (returning) the task if getting data from the server takes too long.
         //If the "dnld" command does not return within 6 retries, the callback returns with no response to the server
-        scheduleJob('*/2 * * * *', () => {
+        scheduleJob('*/1 * * * *', () => {
             pollSensors()
         })
     
@@ -73,8 +74,8 @@ async function constructURL(command: string, sensorIqrfId?: string): Promise<str
         case "dnld":
             // query.from = 95344 //hardcoded to always get this one record 
             // query.to = 95348
-            query.new = 1 //cloud internally keeps track of the last record i pulled
-            // query.count = 1
+            // query.new = 1 //cloud internally keeps track of the last record i pulled
+            query.count = 40
             break
         case "uplc":
             // query.data = "01005E010140FFFFFFFF"
@@ -142,7 +143,7 @@ async function pollSensors() {
     resulting in a max wait time of 1min. To achieve this behavior i needed to wrap the setInterval timer function
     in a promise. Had i not wrapped it so, the timered function would not block, and i want it to block because i want
     the server to wait for its data. */
-    if (atLeastOnePassed) await new Promise< (sensorDataType|null)[] >((resolve, reject) => {
+    if (atLeastOnePassed) await new Promise< (SensorDataType|null)[] >((resolve, reject) => {
         const repLimit = 4
         var reps = 0
         const repDelay = 1000*15
@@ -184,14 +185,14 @@ RECORDS_MATCHED;;;\r\nINDEX;DATETIME;DATA\r\nINDEX...
 I use a series of RegExes to filter relevat data. A singular data-string can contain data from multiple sensors
 so i need to filter them out and extract the data.
  */
-function parseRawServerData(rawData: string): Array<sensorDataType | null> | null {
+function parseRawServerData(rawData: string): Array<SensorDataType | null> | null {
     console.log("V--raw server data--V")
     console.log(rawData)
     console.log("^--raw server data--^")
     if (rawData === "0;;;\r\n") return null //no new data on the server
 
-    // var sensorDataObj: sensorDataType
-    var results: Array<sensorDataType | null> = []
+    // var sensorDataObj: SensorDataType
+    var results: Array<SensorDataType | null> = []
     
     /*rawData is a string containing possibly many records. Every element in arr is one matched record.
     Each element in one matched record is the exact string matched + matched groups.
@@ -227,7 +228,7 @@ function filterSensorData(rawSensor: string): boolean {
 /*From parseRawServerData this function gets a string of 20-40 haxadecimal characters (up to 64 Bytes, 128 chars)
 This string contains device ID, command that was issued, peripheral address, hardware profile, error code, DPA version
 and finally the data that was sent from the sensor. We pretty much only care about the data and sensor ID. */
-function parseSensorData(rawSensor: string): sensorDataType | null {
+function parseSensorData(rawSensor: string): SensorDataType | null {
     if (!filterSensorData(rawSensor)) return null
 
     //Look up the sensor's docs - to get temperature from "raw" reading, multiply it by 0.0625 (to get C)
@@ -266,7 +267,7 @@ function parseSensorData(rawSensor: string): sensorDataType | null {
         valuesDecimal[i] = parseInt(el, 16) * unitArray[i]
     })
 
-    const result: sensorDataType = {
+    const result: SensorDataType = {
         time: "PLACEHOLDER",
         id: sensorId,
         temp: valuesDecimal[0],
@@ -281,10 +282,10 @@ function parseSensorData(rawSensor: string): sensorDataType | null {
 Every record that was transmited to the cloud (those marked as "Rx" in the iqrf cloud admin page) is downloaded.
 Not every record contains useful data - some records basically tell the cloud, that a request was sent to the GW - those are useless to us.
 After download the plugin determines which records contain sensor data, and which dont. Those that dont are simply 
-represented as null. Those that do are treated as an object of type "sensorDataType"
+represented as null. Those that do are treated as an object of type "SensorDataType"
 Here, we get an array of data-bearing-objects and nulls (nulls are the boring, data-less records from IQRFCloud).
 The interesting objects are saved to the DB. */
-async function insertToDB(data: (sensorDataType | null)[]): Promise<void> {
+async function insertToDB(data: (SensorDataType | null)[]): Promise<void> {
 
     await Promise.all(
         data.map((element) => {
@@ -319,4 +320,4 @@ async function insertToDB(data: (sensorDataType | null)[]): Promise<void> {
     //         })
     //     }
     // })
-}
+}  

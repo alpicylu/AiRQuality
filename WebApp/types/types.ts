@@ -17,7 +17,9 @@ export enum SortOptions {
     Tdes = "Temperature Descending",
 }
 
-export interface sensorDataType {
+//TODO divide enums and types/interfaces into separate files (both under types/)
+
+export interface SensorDataType {
     time: string,
     temp: number,
     rehu: number,

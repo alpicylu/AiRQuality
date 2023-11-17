@@ -25,13 +25,14 @@
 // tree-shakable imports
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
-import {DisplayType, sensorDataType} from '../types/types'
+import { DisplayType } from '../types/types'
+import type { SensorDataType } from '../types/types'
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
 const props = defineProps<{
     room: string
     checkAllRadios: DisplayType
-    sensorData?: sensorDataType[]
+    sensorData?: SensorDataType[]
 }>()
 
 

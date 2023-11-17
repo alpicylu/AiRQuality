@@ -1,11 +1,12 @@
-import { PrismaClient, Sensor } from '@prisma/client'
+import { PrismaClient } from '@prisma/client'
+import type { Sensor } from '@prisma/client'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
-import { sensorDataType } from '~/types/types'
+import type { SensorDataType } from '~/types/types'
 const prisma = new PrismaClient()
 
 export default defineEventHandler( async (event) => {
     const sensorID: string | undefined = getRouterParam(event, 'id')
-    const body: sensorDataType = await readBody(event)
+    const body: SensorDataType = await readBody(event)
     var prismaResponse: Sensor
 
     if (sensorID === undefined) throw createError({

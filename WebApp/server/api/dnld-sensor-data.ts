@@ -1,5 +1,5 @@
 import { Prisma, PrismaClient } from '@prisma/client'
-import {sensorDataType} from "../../types/types"
+import type { SensorDataType } from '~/types/types'
 import { useAsyncData, useFetch } from 'nuxt/app'
 const prisma = new PrismaClient()
 
@@ -23,7 +23,7 @@ The API fetches need to work on the server - cannot tie them to views.
 */
 export default defineEventHandler(async () => {
     try {
-        const sensorData = await $fetch<sensorDataType[]>(url.toString(), {
+        const sensorData = await $fetch<SensorDataType[]>(url.toString(), {
             method: 'GET',
             headers: {'content-type':'application/json'},
         })

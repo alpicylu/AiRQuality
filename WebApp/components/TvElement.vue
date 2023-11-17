@@ -16,16 +16,25 @@
             </div>
             <div>C deg</div>
         </div>
-        <div class="h-5/6 w-full bg-violet-400">body</div>
+        <div class="h-5/6 w-full bg-violet-400">
+            
+        </div>
 
     </div>
 </template>
 
 
 <script setup lang="ts">
+import { Line } from 'vue-chartjs'
+import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
+ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
+import type { SensorDataType } from "../types/types"
 
 
+const props = defineProps<{
+    chartData: SensorDataType[],
 
+}>()
 
 </script>
 

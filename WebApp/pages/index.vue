@@ -13,7 +13,8 @@
 </template>
  
 <script setup lang="ts">
-import {DisplayType, SortOptions, sensorDataType} from '../types/types'
+import { DisplayType, SortOptions } from '../types/types'
+import type { SensorDataType } from '../types/types'
 
 interface RoomObject {
     roomName: string,
@@ -44,7 +45,7 @@ const sortOptions = ref([
 const displayValue = ref(displayOptions.value[0]);
 const sortValue = ref(sortOptions.value[0]);
 
-const fetchedSensorData = ref<sensorDataType[]>(Array(50).fill({
+const fetchedSensorData = ref<SensorDataType[]>(Array(50).fill({
     time: '0',
     temp: 0,
     rehu: 0,
@@ -63,16 +64,11 @@ function defaultSort(a: RoomObject, b: RoomObject): number {
 
 //make a call to the internal API for the data. Make sure the data is not null or undef
 async function getSensorData() {
-    const {data, error, status} = await useFetch<sensorDataType[]>('/api/sensors')
+    const {data, error, status} = await useFetch<SensorDataType[]>('/api/sensors')
     if (data.value !== null){
         fetchedSensorData.value = data.value
         console.log(data.value.at(0))
     }
-
-}
-
-async function dnldDataToDB(){
-    await useFetch('/api/dnld-sensor-data')
 }
 
 //Whenever the sort dropdown list changes its value i want to reorder the chart components
@@ -95,10 +91,7 @@ if (process.client) {
     getSensorData()
 }
 
-if (process.server) {
-    console.log("I ran in server")
-    dnldDataToDB()
-}
+
 
 /* TODO
 I want the graphs to load AFTER the server fetched the data. Make all the necessary fetches with the onBeforeMounted lifehook
