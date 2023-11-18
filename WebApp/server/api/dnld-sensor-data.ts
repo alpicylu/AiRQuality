@@ -36,7 +36,7 @@ export default defineEventHandler(async () => {
             throw new Error("Fetched data containes undefined values")
         }
 
-        await prisma.reading.deleteMany()
+        // await prisma.reading.deleteMany()
 
         await prisma.sensor.upsert({ //make this intu upsert 
             where: { name: "C1 234" },

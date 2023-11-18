@@ -29,7 +29,7 @@ Catch as many records as you can and then filter them
 export default defineNitroPlugin( async(nitroApp) => {
 
     if (!FRONT_DEV_MODE) {
-        await prisma.reading.deleteMany({}) 
+        // await prisma.reading.deleteMany({}) 
 
         sensorList = await getSensorList()
         //scheduleJob will make the passed-in function run in a specified interval (every 15 mins)
@@ -182,6 +182,7 @@ async function pollSensors() {
 
 /*Data fetched from the server has the following format:
 RECORDS_MATCHED;;;\r\nINDEX;DATETIME;DATA\r\nINDEX...
+This function deals with extracting info from this blob
 I use a series of RegExes to filter relevat data. A singular data-string can contain data from multiple sensors
 so i need to filter them out and extract the data.
  */
@@ -191,17 +192,16 @@ function parseRawServerData(rawData: string): Array<SensorDataType | null> | nul
     console.log("^--raw server data--^")
     if (rawData === "0;;;\r\n") return null //no new data on the server
 
-    // var sensorDataObj: SensorDataType
     var results: Array<SensorDataType | null> = []
     
     /*rawData is a string containing possibly many records. Every element in arr is one matched record.
     Each element in one matched record is the exact string matched + matched groups.
     For instance, arr[0][0] is the substring that contained the matched regex*/
-    //           INDEX     DATE               TIME               DATA
+    //           INDEX                 DATETIME               DATA
     const re1 = /(\d+);(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2});([A-F0-9]+);/g
     const arr = [...rawData.matchAll(re1)]
     //el[0] - the entire matched substring   el[1] - first matched group (record index)
-    //el[2] - second.... etc.
+    //el[2] - second (datetime) etc.
     arr.forEach((el, i, arr) => {
         var readings = parseSensorData(el[3])
         if (readings !== null) readings.time = new Date(el[2]).toISOString() //overriding the PLACEHOLDER

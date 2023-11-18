@@ -28,11 +28,11 @@
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
-import type { SensorDataType } from "../types/types"
+import type { SensorDataType, SingleSensorReadingsType } from "../types/types"
 
 
 const props = defineProps<{
-    chartData: SensorDataType[],
+    chartData: SingleSensorReadingsType,
 
 }>()
 

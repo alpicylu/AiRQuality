@@ -64,7 +64,7 @@ function defaultSort(a: RoomObject, b: RoomObject): number {
 
 //make a call to the internal API for the data. Make sure the data is not null or undef
 async function getSensorData() {
-    const {data, error, status} = await useFetch<SensorDataType[]>('/api/sensors')
+    const {data, error, status} = await useFetch<SensorDataType[]>('/api/mock-sensors')
     if (data.value !== null){
         fetchedSensorData.value = data.value
         console.log(data.value.at(0))
