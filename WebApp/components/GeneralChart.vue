@@ -35,7 +35,6 @@ const props = defineProps<{
     sensorData?: SensorDataType[]
 }>()
 
-
 //For whatever reason, once the charts are fully loaded they set the radio buttons' checked property to false, and
 //i want the temperature button to be enabled by default.
 //To circumvent that, it set teh checked prop to false at first, wait untill the component fully loads, and then set it to true
@@ -87,6 +86,7 @@ const backgroundColorPlugin = computed(() => {
     }
 });
 
+//TODO WHAT IS THIS BRUH WHY DID I MAKE 3 SEPARATE SWITCHES
 function getReadingFromSensorData(type: DisplayType){
     var tempArr: number[] = []
     switch (type){
