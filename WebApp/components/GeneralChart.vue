@@ -25,7 +25,7 @@
 // tree-shakable imports
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
-import { DisplayType } from '../types/types'
+import { DisplayType } from '../types/enums'
 import type { SensorDataType } from '../types/types'
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 

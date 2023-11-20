@@ -4,18 +4,7 @@ Especially helpful in the GeneralChart component
 TODO: make this a module in the /modules dir.
 */
 
-export enum DisplayType {
-    Temp = "Temperature",
-    Rehu = "Rel. humidity",
-    CO2c = "CO2 content"
-}
 
-export enum SortOptions {
-    Rasc = "Room Ascending",
-    Rdes = "Room Descending",
-    Tasc = "Temperature Ascending",
-    Tdes = "Temperature Descending",
-}
 
 //TODO divide enums and types/interfaces into separate files (both under types/)
 //TODO 2 consider refactoring time into a Date object. I dont see much point in storing it as string

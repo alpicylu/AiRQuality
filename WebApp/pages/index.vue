@@ -13,7 +13,7 @@
 </template>
  
 <script setup lang="ts">
-import { DisplayType, SortOptions } from '../types/types'
+import { DisplayType, SortOptions } from '../types/enums'
 import type { SensorDataType } from '../types/types'
 
 interface RoomObject {
