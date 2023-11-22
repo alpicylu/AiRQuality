@@ -107,7 +107,7 @@ function getReadingFromSensorData(type: DisplayType){
                 tempArr.push(elem.co2c)
             })
     }
-    chartData.value = tempArr //is this a deep copy? should i be worried?
+    chartData.value = tempArr 
 }
 
 //I need to give myself more credit for this.

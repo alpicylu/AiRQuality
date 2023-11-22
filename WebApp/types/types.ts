@@ -11,6 +11,7 @@ TODO: make this a module in the /modules dir.
 //TODO 3 rename id to sensorId
 //TODO 4 consider making Single... a class (with methods like avg, min, max etc.)
 
+//What you get from 1 sensor after asking it about the weather + time
 export interface SensorDataType {
     time: string,
     temp: number,
@@ -19,8 +20,11 @@ export interface SensorDataType {
     id: string //ID of the sensor this reading belongs to
 }
 
+//A collection of some/all readings from a single sensor during a period of time
 export interface SingleSensorReadingsType {
-    room: string,
+    room: string, //room/name assigned to sensor
+    iqrfId: string, //ID assigned to a sensor in IQRF IDE
+    id: string[], //id of a single reading (the T RH CO2 trio)
     time: string[],
     temp: number[],
     rehu: number[],

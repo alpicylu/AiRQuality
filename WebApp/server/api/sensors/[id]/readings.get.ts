@@ -11,9 +11,18 @@ export default defineEventHandler( async(event) => {
     const sensorID: string | undefined = getRouterParam(event, 'id')
     const queryParams = getQuery(event)
 
-    let recordLimit = 50
-    if (queryParams.take !== undefined && queryParams.take !== null){
-        recordLimit = parseInt(queryParams.take?.toString())
+    let recordLimit = 50 //default is 50, if take is faulty or undefined
+    if (typeof queryParams.take === 'string'){ 
+        recordLimit = parseInt(queryParams.take.toString())
+    }
+
+    let readingIdCursor: string|undefined = undefined //id of the last fetched reading
+    let skipNRecords: number|undefined = undefined //to omit the last record from the last batch (if skip == 1)
+    if (typeof queryParams.cursor === 'string') {
+        //check if reading with this id (cursor) exists
+        readingIdCursor = queryParams.cursor 
+        skipNRecords = 1
+        console.log("HERE2: ", readingIdCursor, skipNRecords)
     }
 
     //TODO check if this follows a format
@@ -30,15 +39,19 @@ export default defineEventHandler( async(event) => {
             },
             select:{
                 name: true,
+                iqrfId: true,
                 readings: {
                     select: {
                         timestamp: true,
                         temp: true,
                         rehu: true,
-                        co2c: true
+                        co2c: true,
+                        id: true //although useless for displaying, its crucial for cursor-based pagination (dislplayTv)
                     },
-                    orderBy: {timestamp: "desc"}, //newest first
-                    take: recordLimit
+                    orderBy: {timestamp: "asc"}, //newest first
+                    take: recordLimit,
+                    skip: skipNRecords,
+                    cursor: readingIdCursor !== undefined ? { id: readingIdCursor } : undefined
                 }
             }
         })
@@ -61,6 +74,8 @@ export default defineEventHandler( async(event) => {
     4 lists of those values enclosed in one object. */
     let result: SingleSensorReadingsType = {
         room: '',
+        iqrfId: '',
+        id: [],
         time: [],
         temp: [],
         rehu: [],
@@ -68,7 +83,9 @@ export default defineEventHandler( async(event) => {
     }
     
     result.room = raw.name
+    result.iqrfId = raw.iqrfId
     raw?.readings.forEach((el, i, self) => {
+        result.id.push(el.id)
         result.time.push(el.timestamp.toISOString())
         result.temp.push(el.temp)
         result.rehu.push(el.rehu)

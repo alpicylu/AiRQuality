@@ -25,7 +25,7 @@
 
 
 <script setup lang="ts">
-import { Line } from 'vue-chartjs'
+import { Chart, Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 import type { SensorDataType, SingleSensorReadingsType } from "../types/types"
@@ -64,7 +64,6 @@ onMounted(() => {
     if (props.sensorReadings === undefined){
         //here i need to display something on the chart that will indicate that data either
         //hasnt loaded yet, or that theres no data.
-        console.log("No chart data (at least yet) - null")
     }
 })
 
