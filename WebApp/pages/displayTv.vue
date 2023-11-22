@@ -34,7 +34,7 @@ console.log("sensor count: ", numberOfSensors.value)
 //Instead, "undefined" will be read from the "non-existing" indexes.
 const fetchedSensorData = ref<SingleSensorReadingsType[]>([])
 const readingToDisplay = ref<DisplayType>(DisplayType.Temp)
-const nDataPointsOnChart = ref<number>(20)
+const nDataPointsOnChart = ref<number>(15) 
 const iqrfIdSensorList = ref<string[]>([])
 
 async function getFirstBatchSensorData(){
@@ -71,7 +71,9 @@ function getSmallReadingBatch(){
     //first, get the cursor - ID of the most recent fetched reading.
     //you need to get the last ID for every element in fetchedSensorData
 
-    pushFakeSensorReadings(fetchedSensorData.value[0])
+    for (let sensor of fetchedSensorData.value){
+        pushFakeSensorReadings(sensor)
+    }
 
     //Note that i AM using 4 consecutive await-fetches instead of concurrent ones (provided by Promise.all)
     //This is because otherwise i would have to resort to a for-loop within a forloop to match
@@ -110,29 +112,38 @@ function getSmallReadingBatch(){
 //This is just to test adding new readings and popping old ones 
 function pushFakeSensorReadings(sensor: SingleSensorReadingsType) {
     const dateNow = new Date().toISOString()
-    const tempBase = 20 //degC
-    const rehuBase = 40 //%
-    const co2cBase = 800 //ppm
+    const temp = 20 + Math.floor(Math.random() * (5 - (-5) + 1)) + (-5) //degC
+    const rehu = 40 + Math.floor(Math.random() * (20 - (-20) + 1)) + (-20) //%
+    const co2c = 800 + Math.floor(Math.random() * (400 - (-400) + 1)) + (-400) //ppm
     //https://www.freecodecamp.org/news/javascript-random-number-how-to-generate-a-random-number-in-js/#range-inclusive
 
-    sensor.id.push("FAKEID")
-    sensor.id.shift()
+    //allways add new reading
+    sensor.id = sensor.id.concat("1241336257432")
+    sensor.time = sensor.time.concat(dateNow)
+    sensor.temp = sensor.temp.concat(temp)
+    sensor.rehu = sensor.rehu.concat(rehu)
+    sensor.co2c = sensor.co2c.concat(co2c)
 
-    sensor.time.push(dateNow) 
-    sensor.time.shift()
+    //but if more points have been pushed to those lists than the chart can hold, then
+    //remove oldest reading
+    if (sensor.id.length > nDataPointsOnChart.value){
+        sensor.id = sensor.id.slice(1)
+        sensor.time = sensor.time.slice(1)
+        sensor.temp = sensor.temp.slice(1)
+        sensor.rehu = sensor.rehu.slice(1)
+        sensor.co2c = sensor.co2c.slice(1)
+    }
 
-    // sensor.temp.push( tempBase + Math.floor(Math.random() * (5 - (-5) + 1)) + (-5) )
-    sensor.temp.push(69) //HERE ERROR WHY
-    sensor.temp.shift()
+    // sensor.id = sensor.id.slice(1).concat("ASDFAaeCRCSE")
+    // sensor.time = sensor.time.slice(1).concat(dateNow)
+    // sensor.temp = sensor.temp.slice(1).concat()
+    // sensor.rehu = sensor.rehu.slice(1).concat()
+    // sensor.co2c = sensor.co2c.slice(1).concat()
 
-    // sensor.rehu.push(rehuBase + Math.floor(Math.random() * (20 - (-20) + 1)) + (-20))
-    // sensor.rehu.shift()
-
-    // sensor.co2c.push(co2cBase + Math.floor(Math.random() * (400 - (-400) + 1)) + (-400))
-    // sensor.co2c.shift()
-
-    console.log("Sensor: ", sensor)
+    // console.log("Sensor: ", sensor)
 }
+
+
 
 const displayTypeArr = [DisplayType.Temp, DisplayType.Rehu, DisplayType.CO2c]
 const changeReadingToDisplayInterval = setInterval(() => {
@@ -141,7 +152,7 @@ const changeReadingToDisplayInterval = setInterval(() => {
 
 const x = setInterval(() => {
     getSmallReadingBatch()
-}, 1000*5)
+}, 1000*3)
 
 
 </script>

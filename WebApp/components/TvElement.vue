@@ -28,6 +28,10 @@
 import { Chart, Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
+
+import annotationPlugin from 'chartjs-plugin-annotation';
+ChartJS.register(annotationPlugin);
+
 import type { SensorDataType, SingleSensorReadingsType } from "../types/types"
 import { DisplayType , ChartHealthStatus} from "../types/enums"
 
@@ -37,28 +41,47 @@ const props = defineProps<{
 }>()
 
 //TODO horisontal chart lines at specific points: https://stackoverflow.com/questions/42691873/draw-horizontal-line-on-chart-in-chart-js-on-v2 
+
 const chartOptions = ref({
     responsive: true,
     maintainAspectRatio: false,
-    options: {
-        scales: {
-            y: {
-                ticks: {
-                    color: '#000000'
-                }
-            }
+    animation: {
+        duration: 400
+    },
+    elements:{
+        point: {
+            backgroundColor: "#000000"
         }
+    },
+    scale:{ //apply to both scales
+        font: {
+            size: 16
+        }
+    },
+    scales: {
+        y: {}
     },
     plugins: {
         legend: {
             display: false
+        },
+        //the annotation plugin is not in-line - i cannot pass it into :plugins array into the chart (???)
+        //in contrast, the backgroud color plugin is inline - i can define somewhere and pass it into the above array.
+        annotation: {
+            annotations: {},
         }
     }
 })
 
+//This works, but the switch in the function doenst !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+// chartOptions.value.scales.y = {min: -15, max: 40}
+
 //this one is for splitting sensorReadings - the chart will alternate between temp/rehu/co2c
 const chartData = ref<number[]>([0])
+const chartTime = ref<string[]>([])
 const chartBgColor = ref<string>('#2596be') //blue 
+
+
 
 onMounted(() => {
     if (props.sensorReadings === undefined){
@@ -70,9 +93,10 @@ onMounted(() => {
 //this one is directly passed to the line chart element
 const chartReactiveData = computed(() => {
     return {
-        labels: props.sensorReadings?.time, //if labels are undefined, the chart just wont display data (good)
+        labels: chartTime.value, //if labels are undefined, the chart just wont display data (good)
         datasets: [{
             data: chartData.value,
+            tension: 0.4,
             borderColor: '#000000',
             color: '#000000',
             fontColor: '#000000'
@@ -94,20 +118,7 @@ const backgroundColorPlugin = computed(() => {
     }
 });
 
-//https://www.chartjs.org/chartjs-plugin-annotation/latest/
-const horizontalLineAtSpecificPoint = computed(() => {
-    return {
-        annotation: {
-            annotations: {
-                type: 'line',
-                borderColor: 'black',
-                borderWidth: 5,
-                scaleID: 'y',
-                value: 20
-            }
-        }
-    }
-})
+
 
 const readingToDisplayTypeAbbrev = computed(() => {
     switch (props.readingToDisplay){
@@ -120,8 +131,6 @@ const readingToDisplayTypeAbbrev = computed(() => {
     }
 })
 
-
-
 const currentDisplayValue = computed(() => {
     if (chartData.value.at(-1) !== undefined){
         return Math.round(chartData.value[ chartData.value.length - 1 ])
@@ -130,6 +139,12 @@ const currentDisplayValue = computed(() => {
     }
 })
 
+//This function will be called both when new data is available to display
+//and when the type of data to display changes.
+//This might not be too efficient, since when just 1 new record gets pushed to the sensorReadings array
+//the entire chartData array gets overwritten
+//On the flipside, one function does 2 things and its not called all too often
+//so performance loss is negligible  
 function choseSensorReadingToDisplay(allSensorReadings: SingleSensorReadingsType) {
     switch (props.readingToDisplay){
         case DisplayType.Temp:
@@ -142,20 +157,10 @@ function choseSensorReadingToDisplay(allSensorReadings: SingleSensorReadingsType
             chartData.value = allSensorReadings.co2c
             break
     }
+    chartTime.value = getHourMinFromDate(allSensorReadings.time)
 }
 
-//this watcher will be useful once new data is fetched from the server
-watch(() => props.sensorReadings, (newReadings, oldReadings) => {
-    if (newReadings !== undefined){
-        chartData.value = newReadings.temp
-
-    }
-})
-watch(() => props.readingToDisplay, (newDisplay, oldDisplay) => {
-    if (props.sensorReadings !== undefined){
-        choseSensorReadingToDisplay(props.sensorReadings)
-    }
-
+function setChartBgColorBasedOnLastReading(){
     const mostRecentDataPointValue = chartData.value[chartData.value.length - 1]
     let currentReadingQuality: ChartHealthStatus
     try {
@@ -165,6 +170,161 @@ watch(() => props.readingToDisplay, (newDisplay, oldDisplay) => {
         console.log(err)
     }
     chartBgColor.value = currentReadingQuality
+}
+
+function getHourMinFromDate(date: string[]): string[]{
+    let formattedDates: string[] = []
+    date.forEach(el => {
+        const dateObj = new Date(el)
+        let minutes: number|string = dateObj.getMinutes()
+        let hours: number = dateObj.getHours()
+        if (minutes < 10) minutes = `0${minutes.toString()}`
+
+        formattedDates.push(`${hours}:${minutes}`)
+    })
+    return formattedDates
+}
+
+//https://www.chartjs.org/chartjs-plugin-annotation/latest/
+function drawLinesBasedOnReadingType(type: DisplayType){
+    //Find a way to do this on a loop
+    switch (type){
+        case DisplayType.Temp:
+            chartOptions.value.plugins.annotation.annotations = {
+                line1: {
+                    type: 'line',
+                    yMin: 14,
+                    yMax: 14,
+                    borderColor: 'rgb(90, 90, 90)',
+                    borderWidth: 2,
+                    z: 10
+                },
+                line2: {
+                    type: 'line',
+                    yMin: 18,
+                    yMax: 18,
+                    borderColor: 'rgb(90, 90, 90)',
+                    borderWidth: 2,
+                    z: 10
+                },
+                line3: {
+                    type: 'line',
+                    yMin: 22,
+                    yMax: 22,
+                    borderColor: 'rgb(90, 90, 90)',
+                    borderWidth: 2,
+                    z: 10
+                },
+                line4: {
+                    type: 'line',
+                    yMin: 26,
+                    yMax: 26,
+                    borderColor: 'rgb(90, 90, 90)',
+                    borderWidth: 2,
+                    z: 10
+                }
+            }
+            break
+        case DisplayType.Rehu:
+            chartOptions.value.plugins.annotation.annotations = {
+                line1: {
+                    type: 'line',
+                    yMin: 20,
+                    yMax: 20,
+                    borderColor: 'rgb(90, 90, 90)',
+                    borderWidth: 2,
+                    z: 10
+                },
+                line2: {
+                    type: 'line',
+                    yMin: 30,
+                    yMax: 30,
+                    borderColor: 'rgb(90, 90, 90)',
+                    borderWidth: 2,
+                    z: 10
+                },
+                line3: {
+                    type: 'line',
+                    yMin: 50,
+                    yMax: 50,
+                    borderColor: 'rgb(90, 90, 90)',
+                    borderWidth: 2,
+                    z: 10
+                },
+                line4: {
+                    type: 'line',
+                    yMin: 60,
+                    yMax: 60,
+                    borderColor: 'rgb(90, 90, 90)',
+                    borderWidth: 2,
+                    z: 10
+                }
+            }
+            break
+        case DisplayType.CO2c:
+            chartOptions.value.plugins.annotation.annotations = {
+                line1: {
+                    type: 'line',
+                    yMin: 1000,
+                    yMax: 1000,
+                    borderColor: 'rgb(90, 90, 90)',
+                    borderWidth: 2,
+                    z: 10
+                },
+                line2: {
+                    type: 'line',
+                    yMin: 2000,
+                    yMax: 2000,
+                    borderColor: 'rgb(90, 90, 90)',
+                    borderWidth: 2,
+                    z: 10
+                },
+            }
+            break
+    }
+}
+
+//Does not work and i dont know why
+//TODO try the yAxis approach
+//https://stackoverflow.com/questions/28990708/how-to-set-max-and-min-value-for-y-axis
+function changeChartScaleBasedOnReadingType(type: DisplayType){
+    switch (type){
+        case DisplayType.Temp:
+            chartOptions.value.scales = {y: {min: -15, max: 40}}
+            console.log("Y shifted!: ", chartOptions.value.scales.y)
+            break
+        case DisplayType.Rehu:
+            chartOptions.value.scales = {y: {min: 0, max: 100}}
+            // chartOptions.value.scale.font.size = 26  WHY DOES THIS ONE WORK?!?!?!?
+            break
+        case DisplayType.CO2c:
+            chartOptions.value.scales.y = {min: 400, max: 5000}
+            break
+    }
+    
+}
+
+//this watcher will be useful once new data is fetched from the server
+watch(() => props.sensorReadings, (newReadings, oldReadings) => {
+    if (newReadings !== undefined){
+        //i want to turn off animations for when new reading come in - i dont want the charts to bounce around
+        chartOptions.value.animation.duration = 0
+        choseSensorReadingToDisplay(newReadings)
+    }
+    setChartBgColorBasedOnLastReading()
+    
+
+}, {deep: true}) //need to watch for nested objects to change, not just the object itself
+//without deep: true, this watcher is "shallow"
+
+watch(() => props.readingToDisplay, (newDisplay, oldDisplay) => {
+    if (props.sensorReadings !== undefined){
+        chartOptions.value.animation.duration = 1000
+        choseSensorReadingToDisplay(props.sensorReadings)
+    }
+    setChartBgColorBasedOnLastReading()
+    drawLinesBasedOnReadingType(newDisplay)
+    changeChartScaleBasedOnReadingType(newDisplay)
 })
 
 </script>
