@@ -67,7 +67,7 @@ async function getFirstBatchSensorData(){
 }
 
 //subsequent fetches will ideally only get only a single, freshest record from the DB.
-function getSmallReadingBatch(){
+async function getSmallReadingBatch(){
     //first, get the cursor - ID of the most recent fetched reading.
     //you need to get the last ID for every element in fetchedSensorData
 
@@ -93,19 +93,21 @@ function getSmallReadingBatch(){
 
     //     //remove the oldest N records. Unfortunately, id, time and readings have their own arrays
     //     //shift() takes no argument and does only one elem at a time.
-    //     //also add the new ones while youre at it
-    //     //doesnt matter if id, temp, or whatever. I need the number of records
-    //     const nOldRecordsToRemove = data.value?.id.length 
-    //     sensor.id   = sensor.id.slice(nOldRecordsToRemove).concat(data.value.id)
-    //     sensor.time = sensor.time.slice(nOldRecordsToRemove).concat(data.value.time)
-    //     sensor.temp = sensor.temp.slice(nOldRecordsToRemove).concat(data.value.temp)
-    //     sensor.rehu = sensor.rehu.slice(nOldRecordsToRemove).concat(data.value.rehu)
-    //     sensor.co2c = sensor.co2c.slice(nOldRecordsToRemove).concat(data.value.co2c)
+    //     sensor.id = sensor.id.concat(data.value.id)
+    //     sensor.time = sensor.time.concat(data.value.time)
+    //     sensor.temp = sensor.temp.concat(data.value.temp)
+    //     sensor.rehu = sensor.rehu.concat(data.value.rehu)
+    //     sensor.co2c = sensor.co2c.concat(data.value.co2c)
 
-    //     // console.log("current data")
-    //     // console.log(sensor.id)
-    //     // console.log("new data for", sensor.iqrfId, "N new records: ", nOldRecordsToRemove)
-    //     // console.log(data.value.id)
+    //     if (sensor.id.length > nDataPointsOnChart.value){
+    //         const nOldRecordsToRemove = data.value?.id.length 
+    //         sensor.id = sensor.id.slice(nOldRecordsToRemove)
+    //         sensor.time = sensor.time.slice(nOldRecordsToRemove)
+    //         sensor.temp = sensor.temp.slice(nOldRecordsToRemove)
+    //         sensor.rehu = sensor.rehu.slice(nOldRecordsToRemove)
+    //         sensor.co2c = sensor.co2c.slice(nOldRecordsToRemove)
+    //     }
+
     // }
 }
 
@@ -134,13 +136,6 @@ function pushFakeSensorReadings(sensor: SingleSensorReadingsType) {
         sensor.co2c = sensor.co2c.slice(1)
     }
 
-    // sensor.id = sensor.id.slice(1).concat("ASDFAaeCRCSE")
-    // sensor.time = sensor.time.slice(1).concat(dateNow)
-    // sensor.temp = sensor.temp.slice(1).concat()
-    // sensor.rehu = sensor.rehu.slice(1).concat()
-    // sensor.co2c = sensor.co2c.slice(1).concat()
-
-    // console.log("Sensor: ", sensor)
 }
 
 
@@ -148,11 +143,11 @@ function pushFakeSensorReadings(sensor: SingleSensorReadingsType) {
 const displayTypeArr = [DisplayType.Temp, DisplayType.Rehu, DisplayType.CO2c]
 const changeReadingToDisplayInterval = setInterval(() => {
     readingToDisplay.value = displayTypeArr[ (displayTypeArr.indexOf(readingToDisplay.value) + 1) % 3 ]
-}, 1000*15)
+}, 1000*20)
 
 const x = setInterval(() => {
     getSmallReadingBatch()
-}, 1000*3)
+}, 1000*10)
 
 
 </script>

@@ -1,7 +1,7 @@
 <template>
     <div class=" w-full h-full">
 
-        <div class="flex flex-row justify-evenly items-center h-1/6 w-full border-white border-x-2 text-white bg-black text-5xl">
+        <div class="flex flex-row justify-evenly items-center h-1/6 w-full text-white bg-black text-5xl">
             <div>{{ props.sensorReadings?.room }}</div>
             <div>{{ readingToDisplayTypeAbbrev.abbrev }}</div>
             <div class="grid grid-cols-12 text-base h-full">
@@ -17,7 +17,7 @@
             <div>{{ readingToDisplayTypeAbbrev.unit }}</div>
         </div>
         <div class="border-black border-x-2 h-5/6 w-full">
-            <Line :data="chartReactiveData" :options="chartOptions" :plugins="[backgroundColorPlugin]"/>
+            <Line :data="chartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPlugin]"/>
         </div>
 
     </div>
@@ -42,37 +42,6 @@ const props = defineProps<{
 
 //TODO horisontal chart lines at specific points: https://stackoverflow.com/questions/42691873/draw-horizontal-line-on-chart-in-chart-js-on-v2 
 
-const chartOptions = ref({
-    responsive: true,
-    maintainAspectRatio: false,
-    animation: {
-        duration: 400
-    },
-    elements:{
-        point: {
-            backgroundColor: "#000000"
-        }
-    },
-    scale:{ //apply to both scales
-        font: {
-            size: 16
-        }
-    },
-    scales: {
-        y: {}
-    },
-    plugins: {
-        legend: {
-            display: false
-        },
-        //the annotation plugin is not in-line - i cannot pass it into :plugins array into the chart (???)
-        //in contrast, the backgroud color plugin is inline - i can define somewhere and pass it into the above array.
-        annotation: {
-            annotations: {},
-        }
-    }
-})
-
 //This works, but the switch in the function doenst !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 // chartOptions.value.scales.y = {min: -15, max: 40}
 
@@ -81,12 +50,55 @@ const chartData = ref<number[]>([0])
 const chartTime = ref<string[]>([])
 const chartBgColor = ref<string>('#2596be') //blue 
 
-
+/*The reason for this weird ref existing is that, for some reason, i could dynamically change annotations
+but cannot do the same with axis ranges. Wrapping the ref with all options in a computed property and passing that
+property to the chart element didnt help either. 
+But it seems that if i define the level-0 properties in computed() and then assign to deeper-level objects values
+from a ref, then it works. So if i need to dynamically change the color of the lines, for example, then
+i would have to create a property within the below ref and then reference it in computed(). Weird. But works.*/
+const chartOptions = ref({
+    animationDuration: 400,
+    annotations: {},
+    y: {}
+})
 
 onMounted(() => {
     if (props.sensorReadings === undefined){
         //here i need to display something on the chart that will indicate that data either
         //hasnt loaded yet, or that theres no data.
+    }
+})
+
+const chartReactiveOptions = computed(() => {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+            duration: chartOptions.value.animationDuration
+        },
+        elements:{
+            point: {
+                backgroundColor: "#000000"
+            }
+        },
+        scale:{ //apply to both scales
+            font: {
+                size: 16
+            }
+        },
+        scales: {
+            y: chartOptions.value.y
+        },
+        plugins: {
+            legend: {
+                display: false
+            },
+            //the annotation plugin is not in-line - i cannot pass it into :plugins array into the chart (???)
+            //in contrast, the background color plugin is inline - i can define somewhere and pass it into the above array.
+            annotation: {
+                annotations: chartOptions.value.annotations,
+            }
+        }
     }
 })
 
@@ -117,8 +129,6 @@ const backgroundColorPlugin = computed(() => {
         }
     }
 });
-
-
 
 const readingToDisplayTypeAbbrev = computed(() => {
     switch (props.readingToDisplay){
@@ -190,7 +200,7 @@ function drawLinesBasedOnReadingType(type: DisplayType){
     //Find a way to do this on a loop
     switch (type){
         case DisplayType.Temp:
-            chartOptions.value.plugins.annotation.annotations = {
+            chartOptions.value.annotations = {
                 line1: {
                     type: 'line',
                     yMin: 14,
@@ -226,7 +236,7 @@ function drawLinesBasedOnReadingType(type: DisplayType){
             }
             break
         case DisplayType.Rehu:
-            chartOptions.value.plugins.annotation.annotations = {
+            chartOptions.value.annotations = {
                 line1: {
                     type: 'line',
                     yMin: 20,
@@ -262,7 +272,7 @@ function drawLinesBasedOnReadingType(type: DisplayType){
             }
             break
         case DisplayType.CO2c:
-            chartOptions.value.plugins.annotation.annotations = {
+            chartOptions.value.annotations = {
                 line1: {
                     type: 'line',
                     yMin: 1000,
@@ -287,45 +297,43 @@ function drawLinesBasedOnReadingType(type: DisplayType){
 //Does not work and i dont know why
 //TODO try the yAxis approach
 //https://stackoverflow.com/questions/28990708/how-to-set-max-and-min-value-for-y-axis
+//maybe im changing this property after its drawn? print before/afters
 function changeChartScaleBasedOnReadingType(type: DisplayType){
     switch (type){
         case DisplayType.Temp:
-            chartOptions.value.scales = {y: {min: -15, max: 40}}
-            console.log("Y shifted!: ", chartOptions.value.scales.y)
+            chartOptions.value.y = {min: 10, max: 30}
             break
         case DisplayType.Rehu:
-            chartOptions.value.scales = {y: {min: 0, max: 100}}
-            // chartOptions.value.scale.font.size = 26  WHY DOES THIS ONE WORK?!?!?!?
+            chartOptions.value.y = {min: 0, max: 100}
             break
         case DisplayType.CO2c:
-            chartOptions.value.scales.y = {min: 400, max: 5000}
+            chartOptions.value.y = {min: 400, max: 5000}
             break
     }
-    
 }
 
 //this watcher will be useful once new data is fetched from the server
 watch(() => props.sensorReadings, (newReadings, oldReadings) => {
     if (newReadings !== undefined){
         //i want to turn off animations for when new reading come in - i dont want the charts to bounce around
-        chartOptions.value.animation.duration = 0
+        chartOptions.value.animationDuration = 0
         choseSensorReadingToDisplay(newReadings)
     }
-    setChartBgColorBasedOnLastReading()
-    
+    setChartBgColorBasedOnLastReading()    
 
 }, {deep: true}) //need to watch for nested objects to change, not just the object itself
 //without deep: true, this watcher is "shallow"
 
 watch(() => props.readingToDisplay, (newDisplay, oldDisplay) => {
     if (props.sensorReadings !== undefined){
-        chartOptions.value.animation.duration = 1000
+        chartOptions.value.animationDuration = 1000
         choseSensorReadingToDisplay(props.sensorReadings)
     }
     setChartBgColorBasedOnLastReading()
     drawLinesBasedOnReadingType(newDisplay)
     changeChartScaleBasedOnReadingType(newDisplay)
 })
+
 
 </script>
 
