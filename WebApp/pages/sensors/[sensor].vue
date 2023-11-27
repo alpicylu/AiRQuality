@@ -1,21 +1,32 @@
 <template>
 
-    <div class="flex flex-initial h-full w-full bg-red-200">
+    <div class="flex flex-initial justify-evenly h-full w-full">
 
-        <div class="flex flex-col flex-1 justify-between gap-4">
+        <div class="basis-1/2 flex flex-col flex-auto justify-between gap-4 min-w-0 bg-red-200">
+
             <div class="basis-1/12 flex justify-center items-center">SALA</div>
 
-            <div class="basis-3/12 bg-yellow-400">chart</div>
-            <div class="basis-3/12 bg-yellow-400">chart</div>
-            <div class="basis-3/12 bg-yellow-400">chart</div>
+            <div class="w-full"><Line :data="chartReactiveData" :options="chartReactiveOptions"/></div>
+
+            <!-- <div class="basis-3/12 flex flex-initial justify-center items-center">
+                <h1>Temperature</h1>
+                <div><Line :data="chartReactiveData" :options="chartReactiveOptions"/></div>
+            </div>
+
+            <div class="basis-3/12 flex flex-initial justify-center items-center">
+                <h1>Temperature</h1>
+                <div><Line :data="chartReactiveData" :options="chartReactiveOptions"/></div>
+            </div> -->
+
 
             <div class="basis-1/12 flex justify-around items-center">
                 <button>DATE A</button>
                 <button>DATE B</button>
             </div>
+
         </div>
 
-        <div class="flex flex-col flex-1 justify-between bg-green-200">
+        <div class="basis-1/2 flex flex-col flex-auto justify-between bg-green-200">
             <table class="basis-1/12">
                 <tr>
                     <th>NOW</th>
@@ -59,7 +70,37 @@
 
 
 <script setup lang="ts">
+import { Chart, Line } from 'vue-chartjs'
+import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
+ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
+const chartOptions = ref({})
+const chartData = ref()
+
+const chartReactiveOptions = computed(()=> {
+    return {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            },
+        }
+    }
+})
+
+const chartReactiveData = computed(()=> {
+    return {
+        labels: [0,1,2,3,4], //if labels are undefined, the chart just wont display data (good)
+        datasets: [{
+            data: [0,1,2,3,4],
+            tension: 0.4,
+            borderColor: '#000000',
+            color: '#000000',
+            fontColor: '#000000'
+        }]
+    }
+})
 
 
 </script>
