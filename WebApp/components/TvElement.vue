@@ -40,11 +40,6 @@ const props = defineProps<{
     readingToDisplay: DisplayType
 }>()
 
-//TODO horisontal chart lines at specific points: https://stackoverflow.com/questions/42691873/draw-horizontal-line-on-chart-in-chart-js-on-v2 
-
-//This works, but the switch in the function doenst !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-// chartOptions.value.scales.y = {min: -15, max: 40}
-
 //this one is for splitting sensorReadings - the chart will alternate between temp/rehu/co2c
 const chartData = ref<number[]>([0])
 const chartTime = ref<string[]>([])
@@ -60,13 +55,6 @@ const chartOptions = ref({
     animationDuration: 400,
     annotations: {},
     y: {}
-})
-
-onMounted(() => {
-    if (props.sensorReadings === undefined){
-        //here i need to display something on the chart that will indicate that data either
-        //hasnt loaded yet, or that theres no data.
-    }
 })
 
 const chartReactiveOptions = computed(() => {

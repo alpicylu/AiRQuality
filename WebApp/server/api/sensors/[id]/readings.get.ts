@@ -26,6 +26,8 @@ export default defineEventHandler( async(event) => {
     }
 
     //TODO check if this follows a format
+    //no need, since if Prisma gets a non-existing sensorID, then it will just return null, which should
+    //be checked for in the caller
     if (sensorID === undefined) throw createError({
         statusCode: 400,
         statusMessage: "Sensor ID route parameter is undefined"
