@@ -30,3 +30,13 @@ export interface SingleSensorReadingsType {
     rehu: number[],
     co2c: number[]
 }
+
+// export class SingleSensorReadingsType {
+//     room: string; //room/name assigned to sensor
+//     iqrfId: string; //ID assigned to a sensor in IQRF IDE
+//     id: string[]; //id of a single reading (the T RH CO2 trio)
+//     time: string[];
+//     temp: number[];
+//     rehu: number[];
+//     co2c: number[]
+// }

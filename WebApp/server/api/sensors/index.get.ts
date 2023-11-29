@@ -34,7 +34,7 @@ export default defineEventHandler( async(event) => {
             statusMessage: `Prisma encountered an error while saving records to the database: ${prismaErrCode}`,
         })
     }
-    
+
     setResponseStatus(event, 200)
     return { sensors: res }
 })

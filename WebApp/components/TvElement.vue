@@ -155,9 +155,11 @@ function choseSensorReadingToDisplay(allSensorReadings: SingleSensorReadingsType
             chartData.value = allSensorReadings.co2c
             break
     }
-    chartTime.value = getHourMinFromDate(allSensorReadings.time)
+    // chartTime.value = getHourMinFromDate(allSensorReadings.time)
+    chartTime.value = formatDatesToHourMinute(allSensorReadings.time)
 }
 
+//TODO make into composable/utility
 function setChartBgColorBasedOnLastReading(){
     const mostRecentDataPointValue = chartData.value[chartData.value.length - 1]
     let currentReadingQuality: ChartHealthStatus
@@ -168,19 +170,6 @@ function setChartBgColorBasedOnLastReading(){
         console.log(err)
     }
     chartBgColor.value = currentReadingQuality
-}
-
-function getHourMinFromDate(date: string[]): string[]{
-    let formattedDates: string[] = []
-    date.forEach(el => {
-        const dateObj = new Date(el)
-        let minutes: number|string = dateObj.getMinutes()
-        let hours: number = dateObj.getHours()
-        if (minutes < 10) minutes = `0${minutes.toString()}`
-
-        formattedDates.push(`${hours}:${minutes}`)
-    })
-    return formattedDates
 }
 
 //https://www.chartjs.org/chartjs-plugin-annotation/latest/

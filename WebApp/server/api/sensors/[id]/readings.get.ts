@@ -5,13 +5,16 @@ import type { SingleSensorReadingsType } from '~/types/types'
 
 const prisma = new PrismaClient()
 
-/* Gets records of a sensor specified by the route ID param. Query filters can be applied 
-TODO: try to apply a cursor*/
+/*
+Returns null if a sensor with the matching IQRFID was not found
+Return undefined / void if it threw an error and hasnt finished its planned execution(?)
+IF an error is thrown by an asynchronous function (a promise), and that error is handled, this function returns undefined.
+ */
 export default defineEventHandler( async(event) => {
     const sensorID: string | undefined = getRouterParam(event, 'id')
     const queryParams = getQuery(event)
 
-    let recordLimit = 50 //default is 50, if take is faulty or undefined
+    let recordLimit = 24 //default is 24, if take is faulty or undefined
     if (typeof queryParams.take === 'string'){ 
         recordLimit = parseInt(queryParams.take.toString())
     }
@@ -67,9 +70,9 @@ export default defineEventHandler( async(event) => {
         })
     }
 
-    if (raw === null) throw createError({
+    if (raw === null) throw createError({ //TODO should this be an error? why not just return null
         statusCode: 404,
-        statusMessage: `The readings of a sensor with iqrfID ${sensorID} were not found`
+        statusMessage: `The readings of the sensor with iqrfID ${sensorID} were not found`
     })
 
     /*Instead of having N readings, each containing a single timedate, temperature, humidity and co2 value, i want to have

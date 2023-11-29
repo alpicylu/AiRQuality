@@ -8,17 +8,17 @@
 
             <div class="basis-3/12 flex flex-initial justify-center items-center">
                 <h1 class="w-2/12 break-all">Temperature</h1>
-                <div class="w-10/12 h-full"><Line :data="tempChartReactiveData" :options="chartReactiveOptions"/></div>
+                <div class="w-10/12 h-full"><Line :data="tempChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginTempChart]"/></div>
             </div>
 
             <div class="basis-3/12 flex flex-initial justify-center items-center">
                 <h1 class="w-2/12 break-all">Rel. humidity</h1>
-                <div class="w-10/12 h-full"><Line :data="rehuChartReactiveData" :options="chartReactiveOptions"/></div>
+                <div class="w-10/12 h-full"><Line :data="rehuChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginRehuChart]"/></div>
             </div>
 
             <div class="basis-3/12 flex flex-initial justify-center items-center">
                 <h1 class="w-2/12 break-all">CO2 content</h1>
-                <div class="w-10/12 h-full"><Line :data="co2cChartReactiveData" :options="chartReactiveOptions"/></div>
+                <div class="w-10/12 h-full"><Line :data="co2cChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginCo2cChart]"/></div>
             </div>
 
 
@@ -29,35 +29,19 @@
 
         </div>
 
-        <div class="basis-1/2 flex flex-col flex-auto justify-between">
+        <div class="basis-1/2 flex flex-col flex-auto justify-between gap-4">
             <table class="basis-1/12">
-                <tr>
+                <tr class="h-1/6">
                     <th>NOW</th>
                     <th>MIN</th>
                     <th>MAX</th>
                     <th>AVG</th>
                 </tr>
             </table>
-
-            <table class="basis-9/12">
-                <tr>
-                    <td>a</td>
-                    <td>b</td>
-                    <td>c</td>
-                    <td>c</td>
-                </tr>
-                <tr>
-                    <td>d</td>
-                    <td>e</td>
-                    <td>f</td>
-                    <td>f</td>
-                </tr>
-                <tr>
-                    <td>g</td>
-                    <td>h</td>
-                    <td>i</td>
-                    <td>i</td>
-                </tr>
+            <table class="basis-10/12">
+                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.temp"/>
+                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.rehu"/>
+                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.co2c"/>
             </table>
             
             <div class="basis-1/12 flex justify-around items-center">
@@ -67,8 +51,6 @@
         </div>
     </div>
 
-    
-    
 </template>
 
 
@@ -79,15 +61,18 @@ import type { SingleSensorReadingsType } from '~/types/types';
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
 onMounted(() => {
-    try {
-        getFirstBatchSensorData()
-    } catch (err) {
-        console.log("Failed to get first batch of chart data")
-    }
+    getFirstBatchSensorData()
+        .catch(err => console.log(err))
 })
 
-const chartBgColor = ref<string>('')
+const tempChartBgColor = ref<string>('#fff')
+const rehuChartBgColor = ref<string>('#fff')
+const co2cChartBgColor = ref<string>('#fff')
+
+
 const chartDataTRCReadings = ref<SingleSensorReadingsType>(<SingleSensorReadingsType>{}) //this is where fetched data is saved
+const chartTime = ref<string[]>([])
+
 const sensorIqrfID = ref<string|undefined>('') //route param is room number, but api fetches are done through sensor IQRF ID
 const roomNumber = ref<string>('')
 
@@ -107,9 +92,9 @@ const chartReactiveOptions = computed(()=> {
 //need separate computed data fields
 const tempChartReactiveData = computed(()=> {
     return {
-        labels: chartDataTRCReadings.value?.time, 
+        labels: chartTime.value, 
         datasets: [{
-            data: chartDataTRCReadings.value?.temp,
+            data: chartDataTRCReadings.value.temp,
             tension: 0.4,
             borderColor: '#000000',
             color: '#000000',
@@ -120,9 +105,9 @@ const tempChartReactiveData = computed(()=> {
 
 const rehuChartReactiveData = computed(()=> {
     return {
-        labels: chartDataTRCReadings.value?.time, 
+        labels: chartTime.value, 
         datasets: [{
-            data: chartDataTRCReadings.value?.rehu,
+            data: chartDataTRCReadings.value.rehu,
             tension: 0.4,
             borderColor: '#000000',
             color: '#000000',
@@ -133,9 +118,9 @@ const rehuChartReactiveData = computed(()=> {
 
 const co2cChartReactiveData = computed(()=> {
     return {
-        labels: chartDataTRCReadings.value?.time, 
+        labels: chartTime.value, 
         datasets: [{
-            data: chartDataTRCReadings.value?.co2c,
+            data: chartDataTRCReadings.value.co2c,
             tension: 0.4,
             borderColor: '#000000',
             color: '#000000',
@@ -144,14 +129,42 @@ const co2cChartReactiveData = computed(()=> {
     }
 })
 
-const backgroundColorPlugin = computed(() => {
+const backgroundColorPluginTempChart = computed(() => {
     return {
         id: 'customCanvasBackgroundColor',
         beforeDraw: (chart: any, args: any, options: any) => {
             const {ctx} = chart;
             ctx.save();
             ctx.globalCompositeOperation = 'destination-over';
-            ctx.fillStyle = options.color || chartBgColor.value;
+            ctx.fillStyle = options.color || tempChartBgColor.value;
+            ctx.fillRect(0, 0, chart.width, chart.height);
+            ctx.restore();
+        }
+    }
+})
+
+const backgroundColorPluginRehuChart = computed(() => {
+    return {
+        id: 'customCanvasBackgroundColor',
+        beforeDraw: (chart: any, args: any, options: any) => {
+            const {ctx} = chart;
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = options.color || rehuChartBgColor.value;
+            ctx.fillRect(0, 0, chart.width, chart.height);
+            ctx.restore();
+        }
+    }
+})
+
+const backgroundColorPluginCo2cChart = computed(() => {
+    return {
+        id: 'customCanvasBackgroundColor',
+        beforeDraw: (chart: any, args: any, options: any) => {
+            const {ctx} = chart;
+            ctx.save();
+            ctx.globalCompositeOperation = 'destination-over';
+            ctx.fillStyle = options.color || co2cChartBgColor.value;
             ctx.fillRect(0, 0, chart.width, chart.height);
             ctx.restore();
         }
@@ -166,12 +179,17 @@ async function getFirstBatchSensorData(){
 
     roomNumber.value = roomNumberFromRoute.replace('_', ' ')
 
-    const {data} = await useFetch(`/api/sensors?room=${roomNumber.value}`)
-    if (data.value === null) throw new Error("Failed to fetch specified sensor")
+    const sensor = await useFetch(`/api/sensors?room=${roomNumber.value}`)
+        .then(res => res.data.value?.sensors.at(0)?.iqrfId)
+    if (sensor === null || sensor === undefined) throw new Error("Failed to fetch specified sensor")
+    sensorIqrfID.value = sensor
 
-    sensorIqrfID.value = data.value.sensors.at(0)?.iqrfId
-
-
+    const readings = await useFetch<SingleSensorReadingsType>(`/api/sensors/${sensorIqrfID.value}/readings`)
+        .then(res => res.data.value)
+        .catch(err => console.log(err))
+    if (readings === null || readings === undefined) throw new Error("Failed to fetch sensor readings for the specified sensor")
+    chartDataTRCReadings.value = readings
+    chartTime.value = formatDatesToHourMinute(chartDataTRCReadings.value.time)
 }
 
 </script>
@@ -179,7 +197,7 @@ async function getFirstBatchSensorData(){
 
 <style>
 
-    td {
+    td, th {
         text-align: center; 
         vertical-align: middle;
     }
@@ -190,6 +208,8 @@ async function getFirstBatchSensorData(){
 
     tr>td:last-of-type {
         border-style: none;
+        border-width: 0;
     }
+
 
 </style>
