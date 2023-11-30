@@ -36,14 +36,15 @@ import type { SensorDataType, SingleSensorReadingsType } from "../types/types"
 import { DisplayType , ChartHealthStatus} from "../types/enums"
 
 const props = defineProps<{
-    sensorReadings?: SingleSensorReadingsType, //making it undefined so that charts will just be empty if no data
+    sensorReadings: SingleSensorReadingsType, //making it undefined so that charts will just be empty if no data
     readingToDisplay: DisplayType
 }>()
 
 //this one is for splitting sensorReadings - the chart will alternate between temp/rehu/co2c
 const chartData = ref<number[]>([0])
 const chartTime = ref<string[]>([])
-const chartBgColor = ref<string>('#2596be') //blue 
+
+const {bgColor, updateBgColor} = useDynamicChartBgColor()
 
 /*The reason for this weird ref existing is that, for some reason, i could dynamically change annotations
 but cannot do the same with axis ranges. Wrapping the ref with all options in a computed property and passing that
@@ -111,7 +112,7 @@ const backgroundColorPlugin = computed(() => {
             const {ctx} = chart;
             ctx.save();
             ctx.globalCompositeOperation = 'destination-over';
-            ctx.fillStyle = options.color || chartBgColor.value;
+            ctx.fillStyle = options.color || bgColor.value;
             ctx.fillRect(0, 0, chart.width, chart.height);
             ctx.restore();
         }
@@ -157,19 +158,6 @@ function choseSensorReadingToDisplay(allSensorReadings: SingleSensorReadingsType
     }
     // chartTime.value = getHourMinFromDate(allSensorReadings.time)
     chartTime.value = formatDatesToHourMinute(allSensorReadings.time)
-}
-
-//TODO make into composable/utility
-function setChartBgColorBasedOnLastReading(){
-    const mostRecentDataPointValue = chartData.value[chartData.value.length - 1]
-    let currentReadingQuality: ChartHealthStatus
-    try {
-        currentReadingQuality = calculateSafetyValue(mostRecentDataPointValue, props.readingToDisplay)
-    } catch (err) {
-        currentReadingQuality = ChartHealthStatus.Red
-        console.log(err)
-    }
-    chartBgColor.value = currentReadingQuality
 }
 
 //https://www.chartjs.org/chartjs-plugin-annotation/latest/
@@ -296,7 +284,8 @@ watch(() => props.sensorReadings, (newReadings, oldReadings) => {
         chartOptions.value.animationDuration = 0
         choseSensorReadingToDisplay(newReadings)
     }
-    setChartBgColorBasedOnLastReading()    
+    // setChartBgColorBasedOnLastReading()   
+    updateBgColor(chartData.value, props.readingToDisplay) 
 
 }, {deep: true}) //need to watch for nested objects to change, not just the object itself
 //without deep: true, this watcher is "shallow"
@@ -306,7 +295,8 @@ watch(() => props.readingToDisplay, (newDisplay, oldDisplay) => {
         chartOptions.value.animationDuration = 1000
         choseSensorReadingToDisplay(props.sensorReadings)
     }
-    setChartBgColorBasedOnLastReading()
+    // setChartBgColorBasedOnLastReading()
+    updateBgColor(chartData.value, props.readingToDisplay) 
     drawLinesBasedOnReadingType(newDisplay)
     changeChartScaleBasedOnReadingType(newDisplay)
 })

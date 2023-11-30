@@ -16,5 +16,6 @@ export enum SortOptions {
 export enum ChartHealthStatus {
     Green = '#CBFFA9',
     Yellow = '#FFCF96',
-    Red = '#FF8080'
+    Red = '#FF8080',
+    Error = '#FFFFFF'
 }

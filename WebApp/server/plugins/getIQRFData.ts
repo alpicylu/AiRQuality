@@ -10,7 +10,7 @@ import { PrismaClient } from '@prisma/client'
 import type { Sensor } from '@prisma/client'
 const prisma = new PrismaClient()
 
-const FRONT_DEV_MODE = true
+const FRONT_DEV_MODE = false
 
 //TODO TOP LEVEL AWAIT NOT PERMISSIBLE
 var sensorList: Sensor[] //gets a list of all available sensors
@@ -37,7 +37,7 @@ export default defineNitroPlugin( async(nitroApp) => {
         //interval, then a new task will begin before the previous one completed.
         //Im handling this by manually timing out (returning) the task if getting data from the server takes too long.
         //If the "dnld" command does not return within 6 retries, the callback returns with no response to the server
-        scheduleJob('*/1 * * * *', () => {
+        scheduleJob('*/2 * * * *', () => {
             pollSensors()
         })
     
@@ -301,23 +301,4 @@ async function insertToDB(data: (SensorDataType | null)[]): Promise<void> {
         console.log("Some sensor data failed to be saved to DB")
         console.log(err)
     })
-
-
-    // data.forEach(async (el, i, arr) => {
-    //     if (el !== null) {
-    //         await prisma.sensor.update({
-    //             where: { iqrfId: el.id},
-    //             data: {
-    //                 readings: {
-    //                     create: {
-    //                         timestamp: el.time,
-    //                         temp: el.temp,
-    //                         rehu: el.rehu,
-    //                         co2c: el.co2c,
-    //                     }
-    //                 }
-    //             }
-    //         })
-    //     }
-    // })
 }  

@@ -143,11 +143,11 @@ function pushFakeSensorReadings(sensor: SingleSensorReadingsType) {
 const displayTypeArr = [DisplayType.Temp, DisplayType.Rehu, DisplayType.CO2c]
 const changeReadingToDisplayInterval = setInterval(() => {
     readingToDisplay.value = displayTypeArr[ (displayTypeArr.indexOf(readingToDisplay.value) + 1) % 3 ]
-}, 1000*20)
+}, 1000*10)
 
 const x = setInterval(() => {
     getSmallReadingBatch()
-}, 1000*10)
+}, 1000*2)
 
 
 </script>

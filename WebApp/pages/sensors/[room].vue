@@ -7,17 +7,17 @@
             <div class="basis-1/12 flex justify-center items-center">SALA</div>
 
             <div class="basis-3/12 flex flex-initial justify-center items-center">
-                <h1 class="w-2/12 break-all">Temperature</h1>
+                <h1 class="w-2/12 break-all text-center">Temperature</h1>
                 <div class="w-10/12 h-full"><Line :data="tempChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginTempChart]"/></div>
             </div>
 
             <div class="basis-3/12 flex flex-initial justify-center items-center">
-                <h1 class="w-2/12 break-all">Rel. humidity</h1>
+                <h1 class="w-2/12 break-all text-center">Rel. humidity</h1>
                 <div class="w-10/12 h-full"><Line :data="rehuChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginRehuChart]"/></div>
             </div>
 
             <div class="basis-3/12 flex flex-initial justify-center items-center">
-                <h1 class="w-2/12 break-all">CO2 content</h1>
+                <h1 class="w-2/12 break-all text-center">CO2 content</h1>
                 <div class="w-10/12 h-full"><Line :data="co2cChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginCo2cChart]"/></div>
             </div>
 
@@ -58,6 +58,7 @@
 import { Chart, Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
 import type { SingleSensorReadingsType } from '~/types/types';
+import { DisplayType } from '~/types/enums';
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
 onMounted(() => {
@@ -65,16 +66,21 @@ onMounted(() => {
         .catch(err => console.log(err))
 })
 
-const tempChartBgColor = ref<string>('#fff')
-const rehuChartBgColor = ref<string>('#fff')
-const co2cChartBgColor = ref<string>('#fff')
-
+onUnmounted(() => {
+    clearInterval(pollServerInterval)
+})
 
 const chartDataTRCReadings = ref<SingleSensorReadingsType>(<SingleSensorReadingsType>{}) //this is where fetched data is saved
 const chartTime = ref<string[]>([])
 
 const sensorIqrfID = ref<string|undefined>('') //route param is room number, but api fetches are done through sensor IQRF ID
 const roomNumber = ref<string>('')
+
+const nDataPointsOnChart = ref(24)
+
+const {bgColor: tempChartBgColor, updateBgColor: tempChartBgColorUpdate} = useDynamicChartBgColor()
+const {bgColor: rehuChartBgColor, updateBgColor: rehuChartBgColorUpdate} = useDynamicChartBgColor()
+const {bgColor: co2cChartBgColor, updateBgColor: co2cChartBgColorUpdate} = useDynamicChartBgColor()
 
 const chartReactiveOptions = computed(()=> {
     return {
@@ -192,6 +198,48 @@ async function getFirstBatchSensorData(){
     chartTime.value = formatDatesToHourMinute(chartDataTRCReadings.value.time)
 }
 
+watch(chartDataTRCReadings.value, (newReadings, oldReadings) => {
+    tempChartBgColorUpdate(newReadings.temp, DisplayType.Temp)
+    rehuChartBgColorUpdate(newReadings.temp, DisplayType.Rehu)
+    co2cChartBgColorUpdate(newReadings.temp, DisplayType.CO2c)
+})
+
+async function pollServerForNewReadings(){
+
+    const readings = await useFetch<SingleSensorReadingsType>(
+        `/api/sensors/${sensorIqrfID.value}/readings?take=${nDataPointsOnChart.value}&cursor=${chartDataTRCReadings.value.id.at(-1)}`
+    )
+    .then(res => res.data.value)
+    .catch(err => {
+        console.log(err)
+    })
+
+    if (readings === undefined) throw new Error("Sensor readings fetch encountered an error and has not retrieved data from DB")
+
+    if (readings === null) {
+        console.log("No new batches this time")
+        return
+    }
+    chartDataTRCReadings.value.id = chartDataTRCReadings.value.id.concat(readings.id)
+    chartDataTRCReadings.value.time = chartDataTRCReadings.value.time.concat(readings.time)
+    chartDataTRCReadings.value.temp = chartDataTRCReadings.value.temp.concat(readings.temp)
+    chartDataTRCReadings.value.rehu = chartDataTRCReadings.value.rehu.concat(readings.rehu)
+    chartDataTRCReadings.value.co2c = chartDataTRCReadings.value.co2c.concat(readings.co2c)
+
+    if (chartDataTRCReadings.value.id.length > nDataPointsOnChart.value){
+        const nOldRecordsToRemove = readings.id.length 
+        chartDataTRCReadings.value.id = chartDataTRCReadings.value.id.slice(nOldRecordsToRemove)
+        chartDataTRCReadings.value.time = chartDataTRCReadings.value.time.slice(nOldRecordsToRemove)
+        chartDataTRCReadings.value.temp = chartDataTRCReadings.value.temp.slice(nOldRecordsToRemove)
+        chartDataTRCReadings.value.rehu = chartDataTRCReadings.value.rehu.slice(nOldRecordsToRemove)
+        chartDataTRCReadings.value.co2c = chartDataTRCReadings.value.co2c.slice(nOldRecordsToRemove)
+    }
+}
+
+const pollServerInterval = setInterval(() => {
+    pollServerForNewReadings()
+}, 1000*60)
+
 </script>
 
 
@@ -210,6 +258,5 @@ async function getFirstBatchSensorData(){
         border-style: none;
         border-width: 0;
     }
-
 
 </style>
