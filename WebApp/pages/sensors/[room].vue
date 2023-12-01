@@ -23,29 +23,37 @@
 
 
             <div class="basis-1/12 flex justify-around items-center">
-                <button>DATE A</button>
-                <button>DATE B</button>
+                <DatePicker v-model:pickerDate="dateA"/>
+                <DatePicker v-model:pickerDate="dateB"/>
             </div>
 
         </div>
 
         <div class="basis-1/2 flex flex-col flex-auto justify-between gap-4">
-            <table class="basis-1/12">
-                <tr class="h-1/6">
-                    <th>NOW</th>
-                    <th>MIN</th>
-                    <th>MAX</th>
-                    <th>AVG</th>
-                </tr>
-            </table>
-            <table class="basis-10/12">
-                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.temp"/>
-                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.rehu"/>
-                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.co2c"/>
-            </table>
-            
             <div class="basis-1/12 flex justify-around items-center">
-                <button>CSV</button>
+                <h1>NOW</h1>
+                <h1>MAX</h1>
+                <h1>MIN</h1>
+                <h1>AVG</h1>
+                <h1>UNIT</h1>
+            </div>
+
+
+            <div class="basis-3/12 flex justify-around items-center">
+                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.temp" :readingType="DisplayType.Temp"/>
+            </div>
+
+            <div class="basis-3/12 flex justify-around items-center">
+                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.rehu" :readingType="DisplayType.Rehu"/>
+            </div>
+
+            <div class="basis-3/12 flex justify-around items-center">
+                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.co2c" :readingType="DisplayType.CO2c"/>
+            </div>
+
+
+            <div class="basis-1/12 flex justify-center items-center">
+                CSV
             </div>
 
         </div>
@@ -81,6 +89,9 @@ const nDataPointsOnChart = ref(24)
 const {bgColor: tempChartBgColor, updateBgColor: tempChartBgColorUpdate} = useDynamicChartBgColor()
 const {bgColor: rehuChartBgColor, updateBgColor: rehuChartBgColorUpdate} = useDynamicChartBgColor()
 const {bgColor: co2cChartBgColor, updateBgColor: co2cChartBgColorUpdate} = useDynamicChartBgColor()
+
+const dateA = ref('')
+const dateB = ref('')
 
 const chartReactiveOptions = computed(()=> {
     return {
@@ -198,47 +209,66 @@ async function getFirstBatchSensorData(){
     chartTime.value = formatDatesToHourMinute(chartDataTRCReadings.value.time)
 }
 
-watch(chartDataTRCReadings.value, (newReadings, oldReadings) => {
-    tempChartBgColorUpdate(newReadings.temp, DisplayType.Temp)
-    rehuChartBgColorUpdate(newReadings.temp, DisplayType.Rehu)
-    co2cChartBgColorUpdate(newReadings.temp, DisplayType.CO2c)
-})
+
 
 async function pollServerForNewReadings(){
 
     const readings = await useFetch<SingleSensorReadingsType>(
         `/api/sensors/${sensorIqrfID.value}/readings?take=${nDataPointsOnChart.value}&cursor=${chartDataTRCReadings.value.id.at(-1)}`
     )
-    .then(res => res.data.value)
+    .then(res => {
+        console.log(res.data.value)
+        return res.data.value
+    })
     .catch(err => {
         console.log(err)
     })
 
     if (readings === undefined) throw new Error("Sensor readings fetch encountered an error and has not retrieved data from DB")
+    else if (readings === null) throw new Error("Room-specific sensor readings fetch failed - returned null")
 
-    if (readings === null) {
+    if (readings.id.length === 0) {
         console.log("No new batches this time")
         return
     }
+
     chartDataTRCReadings.value.id = chartDataTRCReadings.value.id.concat(readings.id)
-    chartDataTRCReadings.value.time = chartDataTRCReadings.value.time.concat(readings.time)
     chartDataTRCReadings.value.temp = chartDataTRCReadings.value.temp.concat(readings.temp)
     chartDataTRCReadings.value.rehu = chartDataTRCReadings.value.rehu.concat(readings.rehu)
     chartDataTRCReadings.value.co2c = chartDataTRCReadings.value.co2c.concat(readings.co2c)
+    chartTime.value.push(...formatDatesToHourMinute(readings.time))
 
     if (chartDataTRCReadings.value.id.length > nDataPointsOnChart.value){
         const nOldRecordsToRemove = readings.id.length 
         chartDataTRCReadings.value.id = chartDataTRCReadings.value.id.slice(nOldRecordsToRemove)
-        chartDataTRCReadings.value.time = chartDataTRCReadings.value.time.slice(nOldRecordsToRemove)
         chartDataTRCReadings.value.temp = chartDataTRCReadings.value.temp.slice(nOldRecordsToRemove)
         chartDataTRCReadings.value.rehu = chartDataTRCReadings.value.rehu.slice(nOldRecordsToRemove)
         chartDataTRCReadings.value.co2c = chartDataTRCReadings.value.co2c.slice(nOldRecordsToRemove)
+        chartTime.value.slice(nOldRecordsToRemove)
     }
+
+    console.log("data points on chart: ", chartDataTRCReadings.value.id.length)
 }
+
+watch(() => chartDataTRCReadings.value, (newReadings, oldReadings) => {
+    tempChartBgColorUpdate(newReadings.temp, DisplayType.Temp)
+    rehuChartBgColorUpdate(newReadings.rehu, DisplayType.Rehu)
+    co2cChartBgColorUpdate(newReadings.co2c, DisplayType.CO2c)
+    console.log(tempChartBgColor, rehuChartBgColor, co2cChartBgColor)
+    console.log("room watcher run")
+}, {deep: true})
+
+// const test = setInterval(() => {
+//     chartDataTRCReadings.value.temp.push(7)
+//     chartDataTRCReadings.value.rehu.push(7)
+//     chartDataTRCReadings.value.co2c.push(7)
+//     chartDataTRCReadings.value.id.push("asdgd")
+//     chartDataTRCReadings.value.time.push(new Date().toISOString())
+// }, 1000*3)
 
 const pollServerInterval = setInterval(() => {
     pollServerForNewReadings()
-}, 1000*60)
+}, 1000*30)
 
 </script>
 

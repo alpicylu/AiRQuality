@@ -25,7 +25,7 @@ export default defineEventHandler( async(event) => {
         //check if reading with this id (cursor) exists
         readingIdCursor = queryParams.cursor 
         skipNRecords = 1
-        console.log("HERE2: ", readingIdCursor, skipNRecords)
+        console.log("Passed cursor: ", readingIdCursor)
     }
 
     //TODO check if this follows a format
@@ -40,7 +40,7 @@ export default defineEventHandler( async(event) => {
     try {
         raw = await prisma.sensor.findFirst({
             where: {
-                iqrfId: sensorID //hardcoded, will become a route param
+                iqrfId: sensorID 
             },
             select:{
                 name: true,
@@ -53,7 +53,7 @@ export default defineEventHandler( async(event) => {
                         co2c: true,
                         id: true //although useless for displaying, its crucial for cursor-based pagination (dislplayTv)
                     },
-                    orderBy: {timestamp: "asc"}, //newest first
+                    orderBy: {timestamp: "asc"}, 
                     take: recordLimit,
                     skip: skipNRecords,
                     cursor: readingIdCursor !== undefined ? { id: readingIdCursor } : undefined
@@ -72,8 +72,13 @@ export default defineEventHandler( async(event) => {
 
     if (raw === null) throw createError({ //TODO should this be an error? why not just return null
         statusCode: 404,
-        statusMessage: `The readings of the sensor with iqrfID ${sensorID} were not found`
+        statusMessage: `Sensor of ID ${sensorID} was not found in the DB`
     })
+
+    /*If the sensor was found, but no (new) readings were found, this API will return an "empty" SingleSensorReadingsType obj
+    defined below */
+
+    console.log("readings-get - prisma query returned: ", raw)
 
     /*Instead of having N readings, each containing a single timedate, temperature, humidity and co2 value, i want to have
     4 lists of those values enclosed in one object. */
@@ -89,7 +94,7 @@ export default defineEventHandler( async(event) => {
     
     result.room = raw.name
     result.iqrfId = raw.iqrfId
-    raw?.readings.forEach((el, i, self) => {
+    raw.readings.forEach((el, i, self) => {
         result.id.push(el.id)
         result.time.push(el.timestamp.toISOString())
         result.temp.push(el.temp)

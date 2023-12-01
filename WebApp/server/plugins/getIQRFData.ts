@@ -10,7 +10,7 @@ import { PrismaClient } from '@prisma/client'
 import type { Sensor } from '@prisma/client'
 const prisma = new PrismaClient()
 
-const FRONT_DEV_MODE = false
+const FRONT_DEV_MODE = true
 
 //TODO TOP LEVEL AWAIT NOT PERMISSIBLE
 var sensorList: Sensor[] //gets a list of all available sensors
@@ -40,9 +40,7 @@ export default defineNitroPlugin( async(nitroApp) => {
         scheduleJob('*/2 * * * *', () => {
             pollSensors()
         })
-    
     }
-
 })
 
 /*To make any requests to the IQRF cloud server, we need a signature, which confirms the legitimacy of the request.
@@ -74,8 +72,8 @@ async function constructURL(command: string, sensorIqrfId?: string): Promise<str
         case "dnld":
             // query.from = 95344 //hardcoded to always get this one record 
             // query.to = 95348
-            // query.new = 1 //cloud internally keeps track of the last record i pulled
-            query.count = 40
+            query.new = 1 //cloud internally keeps track of the last record i pulled
+            // query.count = 40
             break
         case "uplc":
             // query.data = "01005E010140FFFFFFFF"
@@ -172,7 +170,7 @@ async function pollSensors() {
     })
     .then(async (res)=> {
         //If promise resolves, save fetched data to DB
-        console.log(res)
+        // console.log(res) !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!Prints formated data to console
         return await insertToDB(res)
     })  //else, catch the rejection
     .catch(err=>console.log(err))
@@ -204,6 +202,10 @@ function parseRawServerData(rawData: string): Array<SensorDataType | null> | nul
     //el[2] - second (datetime) etc.
     arr.forEach((el, i, arr) => {
         var readings = parseSensorData(el[3])
+        //TODO what timezone is this date actually?
+        //this might NOT save the record with the actual time - server is early by an hour, while Warsaw is +1h
+        //compared to UTC, but those differences cancel out eachother and i get the time on my machine.
+        //Date() has access to the machine's timezone(?), so it can convert to UTC easily.
         if (readings !== null) readings.time = new Date(el[2]).toISOString() //overriding the PLACEHOLDER
         results.push(readings)
     })
@@ -296,7 +298,7 @@ async function insertToDB(data: (SensorDataType | null)[]): Promise<void> {
             })
         })
     )
-    .then(res => console.log("Sensor readings updated"))
+    .then(res => console.log("Fetched sensor readings saved to DB"))
     .catch(err => {
         console.log("Some sensor data failed to be saved to DB")
         console.log(err)
