@@ -15,9 +15,6 @@ export default function (){
             console.log(err)
         }
         bgColor.value = currentReadingQuality
-    
-        console.log("Color:", bgColor.value)
-        console.log("Type, Value:", readingsType, ",", mostRecentDataPointValue)
     }
 
     //EXPOSE the state and the state-alter function

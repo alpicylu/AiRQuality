@@ -28,6 +28,20 @@ export default defineEventHandler( async(event) => {
         console.log("Passed cursor: ", readingIdCursor)
     }
 
+    let dateFilter = undefined
+    if (typeof queryParams.dateA === 'string' && typeof queryParams.dateB === 'string'){
+
+        if (isNaN(Date.parse(queryParams.dateA)) || isNaN(Date.parse(queryParams.dateB)))
+            throw new Error("Invalid date format")
+
+        dateFilter = {
+            timestamp: {
+                gte: new Date(queryParams.dateA),
+                lte: new Date(queryParams.dateB)
+            }
+        }
+    }
+
     //TODO check if this follows a format
     //no need, since if Prisma gets a non-existing sensorID, then it will just return null, which should
     //be checked for in the caller
@@ -53,6 +67,7 @@ export default defineEventHandler( async(event) => {
                         co2c: true,
                         id: true //although useless for displaying, its crucial for cursor-based pagination (dislplayTv)
                     },
+                    where: dateFilter,
                     orderBy: {timestamp: "asc"}, 
                     take: recordLimit,
                     skip: skipNRecords,

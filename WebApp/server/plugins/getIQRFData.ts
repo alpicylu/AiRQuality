@@ -37,7 +37,7 @@ export default defineNitroPlugin( async(nitroApp) => {
         //interval, then a new task will begin before the previous one completed.
         //Im handling this by manually timing out (returning) the task if getting data from the server takes too long.
         //If the "dnld" command does not return within 6 retries, the callback returns with no response to the server
-        scheduleJob('*/2 * * * *', () => {
+        scheduleJob('*/1 * * * *', () => {
             pollSensors()
         })
     }
