@@ -9,12 +9,16 @@ const prisma = new PrismaClient()
 Returns null if a sensor with the matching IQRFID was not found
 Return undefined / void if it threw an error and hasnt finished its planned execution(?)
 IF an error is thrown by an asynchronous function (a promise), and that error is handled, this function returns undefined.
+
+Note that orderBy: desc return the latest readings first, but in an order reversed compared to what i need (freshest readings
+appear on the left side of the chart, whereas oldest to the right - which makes sense since thats how desc works). This is why
+i need to reverse it.
  */
 export default defineEventHandler( async(event) => {
     const sensorID: string | undefined = getRouterParam(event, 'id')
     const queryParams = getQuery(event)
 
-    let recordLimit = 24 //default is 24, if take is faulty or undefined
+    let recordLimit: number|undefined = undefined 
     if (typeof queryParams.take === 'string'){ 
         recordLimit = parseInt(queryParams.take.toString())
     }
@@ -68,7 +72,7 @@ export default defineEventHandler( async(event) => {
                         id: true //although useless for displaying, its crucial for cursor-based pagination (dislplayTv)
                     },
                     where: dateFilter,
-                    orderBy: {timestamp: "asc"}, 
+                    orderBy: {timestamp: "desc"}, //take the latest readings first
                     take: recordLimit,
                     skip: skipNRecords,
                     cursor: readingIdCursor !== undefined ? { id: readingIdCursor } : undefined
@@ -93,7 +97,7 @@ export default defineEventHandler( async(event) => {
     /*If the sensor was found, but no (new) readings were found, this API will return an "empty" SingleSensorReadingsType obj
     defined below */
 
-    console.log("readings-get - prisma query returned: ", raw)
+    
 
     /*Instead of having N readings, each containing a single timedate, temperature, humidity and co2 value, i want to have
     4 lists of those values enclosed in one object. */
@@ -109,13 +113,22 @@ export default defineEventHandler( async(event) => {
     
     result.room = raw.name
     result.iqrfId = raw.iqrfId
-    raw.readings.forEach((el, i, self) => {
-        result.id.push(el.id)
-        result.time.push(el.timestamp.toISOString())
-        result.temp.push(el.temp)
-        result.rehu.push(el.rehu)
-        result.co2c.push(el.co2c)
-    })
+    // raw.readings.forEach((el, i, self) => {
+    //     result.id.push(el.id)
+    //     result.time.push(el.timestamp.toISOString())
+    //     result.temp.push(el.temp)
+    //     result.rehu.push(el.rehu)
+    //     result.co2c.push(el.co2c)
+    // })
+
+    //this is so that records are returned in a chronological order (IF orderBy is set to desc)
+    for (let readingIndex = raw.readings.length-1; readingIndex >= 0; --readingIndex){
+        result.id.push(raw.readings[readingIndex].id)
+        result.time.push(raw.readings[readingIndex].timestamp.toISOString())
+        result.temp.push(raw.readings[readingIndex].temp)
+        result.rehu.push(raw.readings[readingIndex].rehu)
+        result.co2c.push(raw.readings[readingIndex].co2c)
+    }
 
     return result
 })

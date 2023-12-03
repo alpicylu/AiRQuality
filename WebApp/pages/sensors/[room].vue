@@ -26,7 +26,7 @@
                 <DatePicker v-model:pickerDate="dateA"/>
                 <DatePicker v-model:pickerDate="dateB"/>
                 <button @click="getReadingsFromDateToDate" class="rounded-full bg-ext-margins p-3">Apply</button>
-                <button class="rounded-full bg-ext-margins p-3">Default</button>
+                <button @click="getFirstBatchSensorData" class="rounded-full bg-ext-margins p-3">Default</button>
             </div>
 
         </div>
@@ -79,8 +79,13 @@ onMounted(() => {
 })
 
 onUnmounted(() => {
-    clearInterval(pollServerInterval)
+    if (pollServerInterval !== null) {
+        clearInterval(pollServerInterval)
+        pollServerInterval = null
+    }
 })
+
+const serverIntervalPoll = 1000*10
 
 const chartDataTRCReadings = ref<SingleSensorReadingsType>(<SingleSensorReadingsType>{}) //this is where fetched data is saved
 const chartTime = ref<string[]>([])
@@ -105,9 +110,6 @@ const chartReactiveOptions = computed(()=> {
             legend: {
                 display: false
             },
-            decimation: {
-                threshold: nDataPointsOnChart.value
-            }
         }
     }
 })
@@ -122,7 +124,7 @@ const tempChartReactiveData = computed(()=> {
             tension: 0.4,
             borderColor: '#000000',
             color: '#000000',
-            fontColor: '#000000'
+            fontColor: '#000000',
         }]
     }
 })
@@ -195,6 +197,7 @@ const backgroundColorPluginCo2cChart = computed(() => {
     }
 })
 
+
 async function getFirstBatchSensorData(){
     const route = useRoute()
 
@@ -208,18 +211,34 @@ async function getFirstBatchSensorData(){
     if (sensor === null || sensor === undefined) throw new Error("Failed to fetch specified sensor")
     sensorIqrfID.value = sensor
 
-    const readings = await useFetch<SingleSensorReadingsType>(`/api/sensors/${sensorIqrfID.value}/readings`)
+    const readings = await useFetch<SingleSensorReadingsType>(`/api/sensors/${sensorIqrfID.value}/readings?take=${nDataPointsOnChart.value}`)
         .then(res => res.data.value)
         .catch(err => console.log(err))
     if (readings === null || readings === undefined) throw new Error("Failed to fetch sensor readings for the specified sensor")
     chartDataTRCReadings.value = readings
     chartTime.value = formatDatesToHourMinute(chartDataTRCReadings.value.time)
 
+    console.log(readings)
+
     //TODO check if interval is started - if not, start !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
+    if (pollServerInterval === null) pollServerInterval = setInterval(() => {pollServerForNewReadings()}, serverIntervalPoll)
+    
 }
 
 async function pollServerForNewReadings(){
 
+    //I messed something oup. Check if the cursor is passed correctly (i did inverse the order in readings.get)
+    //its probably the combination of the descending order and inversing. Maybe im paginating backawrds?
+    //is cursor with orderBy: desc moving "backwards"?
+    //getting doubled readings - those do exist in the DB so its not a query problem
+    //you will have to modify readings.get to allow for 2 styles of ordering.
+
+    /* Solution?
+        make the first fetch in a 'desc' order, reverse the result, grab the 0-th index, keep it as a cursor
+        make subsequent fetches in an 'asc' order with the cursor saved in the previous fetch
+    */
+
+    //with ascending order, last cursor should be at index 0? since we are flipping the arrays in readings.get?
     const readings = await useFetch<SingleSensorReadingsType>( //note that .at(-1) can produce undefined, which will be passed as 'undefined' (string) here
         `/api/sensors/${sensorIqrfID.value}/readings?take=${nDataPointsOnChart.value}&cursor=${chartDataTRCReadings.value.id.at(-1)}`
     )
@@ -240,6 +259,9 @@ async function pollServerForNewReadings(){
         return
     }
 
+    console.log("pollServerForNewReadings - prisma query returned: ", readings)
+    
+
     chartDataTRCReadings.value.id = chartDataTRCReadings.value.id.concat(readings.id)
     chartDataTRCReadings.value.temp = chartDataTRCReadings.value.temp.concat(readings.temp)
     chartDataTRCReadings.value.rehu = chartDataTRCReadings.value.rehu.concat(readings.rehu)
@@ -255,6 +277,7 @@ async function pollServerForNewReadings(){
         chartTime.value.slice(nOldRecordsToRemove)
     }
 
+    console.log("Data currently in charts:", chartDataTRCReadings)
     console.log("data points on chart: ", chartDataTRCReadings.value.id.length)
 }
 
@@ -276,8 +299,8 @@ Those readings are saved to the ref that stores sensor data (chartDataTRCReading
 truncating to 24 readings - instead, they will be decimated by a ChartJS plugin*/
 async function getReadingsFromDateToDate() {
 
-    clearInterval(pollServerInterval)
-    console.log("pollInterval:", pollServerInterval)
+    if (pollServerInterval !== null) clearInterval(pollServerInterval)
+    pollServerInterval = null
 
     //TODO: check if this works
     const readings = await useFetch<SingleSensorReadingsType>(`/api/sensors/${sensorIqrfID.value}/readings?dateA=${dateA.value}&dateB=${dateB.value}`)
@@ -288,10 +311,20 @@ async function getReadingsFromDateToDate() {
     //there isnt really a case in my API route to return null, but ig useFetch can possibly return it if something goes bad?
     else if (readings === null) throw new Error("Room-specific sensor readings fetch failed - returned null")
 
-    console.log("HERE:", readings.time) //NO records returned.
+    console.log("n fetched records:", readings.id.length)
 
-    //save readings
-    chartDataTRCReadings.value = readings
+    //Decimate
+    const decimationFactor = Math.ceil(readings.id.length / nDataPointsOnChart.value)
+    console.log(decimationFactor)
+
+    readings.id = readings.id.filter((el, i) => i % decimationFactor === 0)
+    readings.time = readings.time.filter((el, i) => i % decimationFactor === 0)
+    readings.temp = readings.temp.filter((el, i) => i % decimationFactor === 0)
+    readings.rehu = readings.rehu.filter((el, i) => i % decimationFactor === 0)
+    readings.co2c = readings.co2c.filter((el, i) => i % decimationFactor === 0)
+
+    // //save readings
+    // chartDataTRCReadings.value = readings
 
     //Decide on time-axis labels. Times are undefined if no readings were fetched
     const daysOfDifference = calcDateDiff(readings.time.at(0), readings.time.at(-1))
@@ -310,20 +343,19 @@ async function getReadingsFromDateToDate() {
     else {
         chartTime.value = formatDatesToDayMonthYear(readings.time)
     }
-    console.log(daysOfDifference)
 }
 
 watch(() => chartDataTRCReadings.value, (newReadings, oldReadings) => {
     tempChartBgColorUpdate(newReadings.temp, DisplayType.Temp)
     rehuChartBgColorUpdate(newReadings.rehu, DisplayType.Rehu)
     co2cChartBgColorUpdate(newReadings.co2c, DisplayType.CO2c)
-    console.log(tempChartBgColor, rehuChartBgColor, co2cChartBgColor)
 }, {deep: true})
 
 
-var pollServerInterval = setInterval(() => {
+var pollServerInterval: null|NodeJS.Timeout = setInterval(() => {
     pollServerForNewReadings()
-}, 1000*300)
+}, serverIntervalPoll)
+
 
 </script>
 
