@@ -10,7 +10,7 @@ import { PrismaClient } from '@prisma/client'
 import type { Sensor } from '@prisma/client'
 const prisma = new PrismaClient()
 
-const FRONT_DEV_MODE = true
+const FRONT_DEV_MODE = false
 
 //TODO TOP LEVEL AWAIT NOT PERMISSIBLE
 var sensorList: Sensor[] //gets a list of all available sensors
@@ -89,12 +89,7 @@ async function constructURL(command: string, sensorIqrfId?: string): Promise<str
 
 /*This function will fetch relevant data (room and iqrfID) of all sensors from the DB */
 async function getSensorList(): Promise<Sensor[]> {
-    const sensors: Sensor[] = await prisma.sensor.findMany({
-        // select: {
-        //     iqrfId: true,
-        //     name: true
-        // }
-    })
+    const sensors: Sensor[] = await prisma.sensor.findMany({})
     return sensors
 }
 

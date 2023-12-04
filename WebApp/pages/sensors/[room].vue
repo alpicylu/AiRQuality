@@ -63,7 +63,6 @@
 
 </template>
 
-
 <script setup lang="ts">
 import { Chart, Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
@@ -102,10 +101,18 @@ const {bgColor: co2cChartBgColor, updateBgColor: co2cChartBgColorUpdate} = useDy
 const dateA = ref('')
 const dateB = ref('')
 
+/*the first cursor will be assigned with the id of the newest reading fetched from getFirstBatchSensorData
+this will be used by the first poll of the pollServerForNewReadings func. This cursor gets overwritten with new IDs
+after new data is fetched.*/
+const batchCursor = ref<string>('')
+
 const chartReactiveOptions = computed(()=> {
     return {
         responsive: true,
         maintainAspectRatio: false,
+        animation: {
+            duration: 0
+        },
         plugins: {
             legend: {
                 display: false
@@ -211,18 +218,31 @@ async function getFirstBatchSensorData(){
     if (sensor === null || sensor === undefined) throw new Error("Failed to fetch specified sensor")
     sensorIqrfID.value = sensor
 
-    const readings = await useFetch<SingleSensorReadingsType>(`/api/sensors/${sensorIqrfID.value}/readings?take=${nDataPointsOnChart.value}`)
+    const readings = await useFetch<SingleSensorReadingsType>(`/api/sensors/${sensorIqrfID.value}/readings?take=${nDataPointsOnChart.value}&order=desc`)
         .then(res => res.data.value)
         .catch(err => console.log(err))
     if (readings === null || readings === undefined) throw new Error("Failed to fetch sensor readings for the specified sensor")
+
+    if (readings.id.length <= 0) {
+        console.log("No readings attached to the specified sensor were found")
+        return
+    }
+
+    //save first ID of reverse-chrono order as cursor for the first of the periodic polls. This cursor corresponds to the newest reading
+    batchCursor.value = readings.id[0]
+    console.log("First cursor:", batchCursor.value)
+
+    /*fetched newest records, but in reverse chrono order - need to reverse the matrix. reverse() mutates the array. */
+    readings.id.reverse()
+    readings.time.reverse()
+    readings.temp.reverse()
+    readings.rehu.reverse()
+    readings.co2c.reverse()
+    
     chartDataTRCReadings.value = readings
     chartTime.value = formatDatesToHourMinute(chartDataTRCReadings.value.time)
 
-    console.log(readings)
-
-    //TODO check if interval is started - if not, start !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!1
-    if (pollServerInterval === null) pollServerInterval = setInterval(() => {pollServerForNewReadings()}, serverIntervalPoll)
-    
+    if (pollServerInterval === null) pollServerInterval = setInterval(() => {pollServerForNewReadings()}, serverIntervalPoll)    
 }
 
 async function pollServerForNewReadings(){
@@ -233,17 +253,11 @@ async function pollServerForNewReadings(){
     //getting doubled readings - those do exist in the DB so its not a query problem
     //you will have to modify readings.get to allow for 2 styles of ordering.
 
-    /* Solution?
-        make the first fetch in a 'desc' order, reverse the result, grab the 0-th index, keep it as a cursor
-        make subsequent fetches in an 'asc' order with the cursor saved in the previous fetch
-    */
-
     //with ascending order, last cursor should be at index 0? since we are flipping the arrays in readings.get?
     const readings = await useFetch<SingleSensorReadingsType>( //note that .at(-1) can produce undefined, which will be passed as 'undefined' (string) here
-        `/api/sensors/${sensorIqrfID.value}/readings?take=${nDataPointsOnChart.value}&cursor=${chartDataTRCReadings.value.id.at(-1)}`
+        `/api/sensors/${sensorIqrfID.value}/readings?take=${nDataPointsOnChart.value}&order=asc&cursor=${batchCursor.value}`
     )
     .then(res => {
-        console.log(res.data.value)
         return res.data.value
     })
     .catch(err => {
@@ -261,24 +275,27 @@ async function pollServerForNewReadings(){
 
     console.log("pollServerForNewReadings - prisma query returned: ", readings)
     
+    /*Update the cursor with the newest reading ID */
+    batchCursor.value = readings.id[readings.id.length-1]
+    console.log("New cursor:", batchCursor.value)
 
     chartDataTRCReadings.value.id = chartDataTRCReadings.value.id.concat(readings.id)
     chartDataTRCReadings.value.temp = chartDataTRCReadings.value.temp.concat(readings.temp)
     chartDataTRCReadings.value.rehu = chartDataTRCReadings.value.rehu.concat(readings.rehu)
     chartDataTRCReadings.value.co2c = chartDataTRCReadings.value.co2c.concat(readings.co2c)
-    chartTime.value.push(...formatDatesToHourMinute(readings.time))
+    chartTime.value = chartTime.value.concat(...formatDatesToHourMinute(readings.time))
 
     if (chartDataTRCReadings.value.id.length > nDataPointsOnChart.value){
-        const nOldRecordsToRemove = readings.id.length 
+        const nOldRecordsToRemove = readings.id.length //N old records to remove == new records fetched
         chartDataTRCReadings.value.id = chartDataTRCReadings.value.id.slice(nOldRecordsToRemove)
         chartDataTRCReadings.value.temp = chartDataTRCReadings.value.temp.slice(nOldRecordsToRemove)
         chartDataTRCReadings.value.rehu = chartDataTRCReadings.value.rehu.slice(nOldRecordsToRemove)
         chartDataTRCReadings.value.co2c = chartDataTRCReadings.value.co2c.slice(nOldRecordsToRemove)
-        chartTime.value.slice(nOldRecordsToRemove)
+        chartTime.value = chartTime.value.slice(nOldRecordsToRemove)
     }
 
-    console.log("Data currently in charts:", chartDataTRCReadings)
-    console.log("data points on chart: ", chartDataTRCReadings.value.id.length)
+    console.log("Data currently in charts:", chartDataTRCReadings.value.temp)
+    console.log("Time points on chart:", chartTime.value)
 }
 
 function calcDateDiff(dateA: string|undefined, dateB: string|undefined): number | null{
@@ -313,7 +330,7 @@ async function getReadingsFromDateToDate() {
 
     console.log("n fetched records:", readings.id.length)
 
-    //Decimate
+    //Decimate - cant get ChartJS to do its own decimation (maybe coz im using custom labels in datasets?)
     const decimationFactor = Math.ceil(readings.id.length / nDataPointsOnChart.value)
     console.log(decimationFactor)
 
@@ -356,6 +373,10 @@ var pollServerInterval: null|NodeJS.Timeout = setInterval(() => {
     pollServerForNewReadings()
 }, serverIntervalPoll)
 
+
+
+
+/* https://stackoverflow.com/questions/2809688/directory-chooser-in-html-page */
 
 </script>
 

@@ -1,8 +1,7 @@
 import { PrismaClient } from '@prisma/client'
-import type { Sensor } from '@prisma/client'
 import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 import type { SingleSensorReadingsType } from '~/types/types'
-
+import {Prisma} from '@prisma/client'
 const prisma = new PrismaClient()
 
 /*
@@ -26,23 +25,50 @@ export default defineEventHandler( async(event) => {
     let readingIdCursor: string|undefined = undefined //id of the last fetched reading
     let skipNRecords: number|undefined = undefined //to omit the last record from the last batch (if skip == 1)
     if (typeof queryParams.cursor === 'string') {
-        //check if reading with this id (cursor) exists
+        //TODO check if reading with this id (cursor) exists
+        if (!/^[0-9a-fA-F]{24}$/g.test(queryParams.cursor)) createError({
+            statusCode: 400,
+            statusMessage: "Bad Request",
+            message: `Invalid reading ID. Must be a hexadecimal string, 24-chars in length`
+        })
+
         readingIdCursor = queryParams.cursor 
         skipNRecords = 1
-        console.log("Passed cursor: ", readingIdCursor)
     }
 
     let dateFilter = undefined
     if (typeof queryParams.dateA === 'string' && typeof queryParams.dateB === 'string'){
 
-        if (isNaN(Date.parse(queryParams.dateA)) || isNaN(Date.parse(queryParams.dateB)))
-            throw new Error("Invalid date format")
+        if (isNaN(Date.parse(queryParams.dateA)) || isNaN(Date.parse(queryParams.dateB))) createError({
+            statusCode: 400,
+            statusMessage: "Bad Request",
+            message: `One of the dates is in an invalid format`
+        })
 
         dateFilter = {
             timestamp: {
                 gte: new Date(queryParams.dateA),
                 lte: new Date(queryParams.dateB)
             }
+        }
+    }
+
+    let sortOrder: Prisma.SortOrder|undefined = undefined
+    if (typeof queryParams.order === 'string'){
+        switch (queryParams.order){
+            case 'asc':
+                sortOrder = Prisma.SortOrder.asc
+                break
+            case 'desc':
+                sortOrder = Prisma.SortOrder.desc
+                break
+            default: 
+                createError({
+                    statusCode: 400,
+                    statusMessage: "Bad Request",
+                    message: `Invalid sort order. Valid ones are 'asc' or 'desc'`
+                })
+                break
         }
     }
 
@@ -72,7 +98,7 @@ export default defineEventHandler( async(event) => {
                         id: true //although useless for displaying, its crucial for cursor-based pagination (dislplayTv)
                     },
                     where: dateFilter,
-                    orderBy: {timestamp: "desc"}, //take the latest readings first
+                    orderBy: {timestamp: sortOrder }, //take the latest readings first
                     take: recordLimit,
                     skip: skipNRecords,
                     cursor: readingIdCursor !== undefined ? { id: readingIdCursor } : undefined
@@ -113,22 +139,22 @@ export default defineEventHandler( async(event) => {
     
     result.room = raw.name
     result.iqrfId = raw.iqrfId
-    // raw.readings.forEach((el, i, self) => {
-    //     result.id.push(el.id)
-    //     result.time.push(el.timestamp.toISOString())
-    //     result.temp.push(el.temp)
-    //     result.rehu.push(el.rehu)
-    //     result.co2c.push(el.co2c)
-    // })
+    raw.readings.forEach((el, i, self) => {
+        result.id.push(el.id)
+        result.time.push(el.timestamp.toISOString())
+        result.temp.push(el.temp)
+        result.rehu.push(el.rehu)
+        result.co2c.push(el.co2c)
+    })
 
-    //this is so that records are returned in a chronological order (IF orderBy is set to desc)
-    for (let readingIndex = raw.readings.length-1; readingIndex >= 0; --readingIndex){
-        result.id.push(raw.readings[readingIndex].id)
-        result.time.push(raw.readings[readingIndex].timestamp.toISOString())
-        result.temp.push(raw.readings[readingIndex].temp)
-        result.rehu.push(raw.readings[readingIndex].rehu)
-        result.co2c.push(raw.readings[readingIndex].co2c)
-    }
+    // //this is so that records are returned in a chronological order (IF orderBy is set to desc)
+    // for (let readingIndex = raw.readings.length-1; readingIndex >= 0; --readingIndex){
+    //     result.id.push(raw.readings[readingIndex].id)
+    //     result.time.push(raw.readings[readingIndex].timestamp.toISOString())
+    //     result.temp.push(raw.readings[readingIndex].temp)
+    //     result.rehu.push(raw.readings[readingIndex].rehu)
+    //     result.co2c.push(raw.readings[readingIndex].co2c)
+    // }
 
     return result
 })
