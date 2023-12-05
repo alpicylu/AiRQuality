@@ -22,10 +22,14 @@ REVISE THE ABOVE NOTES - MISSINFO
 
 Should i just work on epoch-timestamps?
 */
+
+/*dates[] is an array of strings representing timedates in UTC format 
+new Date() will not convert that datetime, add/subtract hours from it. If Date() gets
+an UTC ISO time string, or whatever its called, it returns a Date obj with no timezone corrections*/
 export function formatDatesToHourMinute(dates: string[]){
     let formattedDates: string[] = []
     dates.forEach(el => {
-        const dateObj = new Date(el)
+        const dateObj = new Date(el) 
         let minutes: number|string = dateObj.getMinutes()
         let hours: number = dateObj.getHours()
         if (minutes < 10) minutes = `0${minutes.toString()}`

@@ -10,7 +10,7 @@ import { PrismaClient } from '@prisma/client'
 import type { Sensor } from '@prisma/client'
 const prisma = new PrismaClient()
 
-const FRONT_DEV_MODE = true
+const FRONT_DEV_MODE = false
 
 //TODO TOP LEVEL AWAIT NOT PERMISSIBLE
 var sensorList: Sensor[] //gets a list of all available sensors
@@ -197,11 +197,13 @@ function parseRawServerData(rawData: string): Array<SensorDataType | null> | nul
     //el[2] - second (datetime) etc.
     arr.forEach((el, i, arr) => {
         var readings = parseSensorData(el[3])
-        //TODO what timezone is this date actually?
-        //this might NOT save the record with the actual time - server is early by an hour, while Warsaw is +1h
-        //compared to UTC, but those differences cancel out eachother and i get the time on my machine.
-        //Date() has access to the machine's timezone(?), so it can convert to UTC easily.
-        if (readings !== null) readings.time = new Date(el[2]).toISOString() //overriding the PLACEHOLDER
+        //server is +1h compared to warsaw - need to subtract 1 to get local
+        const localTimeOfReading = new Date(el[2])
+        localTimeOfReading.setHours(localTimeOfReading.getHours() - 1)
+
+
+        // if (readings !== null) readings.time = new Date(el[2]).toISOString() //overriding the PLACEHOLDER
+        if (readings !== null) readings.time = localTimeOfReading.toISOString() 
         results.push(readings)
     })
     return results
@@ -224,7 +226,8 @@ function filterSensorData(rawSensor: string): boolean {
 
 /*From parseRawServerData this function gets a string of 20-40 haxadecimal characters (up to 64 Bytes, 128 chars)
 This string contains device ID, command that was issued, peripheral address, hardware profile, error code, DPA version
-and finally the data that was sent from the sensor. We pretty much only care about the data and sensor ID. */
+and finally the data that was sent from the sensor. We pretty much only care about the data and sensor ID. 
+The data that this function gets is equivalent to 1 record from IQRF cloud*/
 function parseSensorData(rawSensor: string): SensorDataType | null {
     if (!filterSensorData(rawSensor)) return null
 
