@@ -10,7 +10,7 @@ import { PrismaClient } from '@prisma/client'
 import type { Sensor } from '@prisma/client'
 const prisma = new PrismaClient()
 
-const FRONT_DEV_MODE = false
+const FRONT_DEV_MODE = true
 
 //TODO TOP LEVEL AWAIT NOT PERMISSIBLE
 var sensorList: Sensor[] //gets a list of all available sensors

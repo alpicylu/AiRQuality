@@ -55,7 +55,7 @@
 
 
             <div class="basis-1/12 flex justify-center items-center">
-                CSV
+                <button @click="buttonTestFunction">BUTTON</button>
             </div>
 
         </div>
@@ -71,6 +71,7 @@ import { DisplayType } from '~/types/enums';
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
 import {formatDatesToHourMinute, formatDatesToHourDayMonth, formatDatesToDayMonth, formatDatesToDayMonthYear} from "~/utils/formatDateTimeStrings"
+import fs from 'node:fs'
 
 onMounted(() => {
     getFirstBatchSensorData()
@@ -204,6 +205,40 @@ const backgroundColorPluginCo2cChart = computed(() => {
     }
 })
 
+async function buttonTestFunction(){
+    await useFetch(`/api/sensors/0100/readings?&dateA=${dateA.value}&dateB=${dateB.value}`)
+        .then(res => {
+            if (res.data.value !== null) return parseSensorReadingToCSV(res.data.value) 
+            throw new Error("Fetch returned null - cannot parse to CSV")
+        })
+        .then(res => {
+            const blob = new Blob([res], { type: 'text/csv' })
+            const filenameFromDate = `${new Date().toISOString().slice(0, -5).replace(/:/g, "-")}`
+            downloadBlob(blob, filenameFromDate)
+        })
+        .catch(console.error)
+} 
+
+function downloadBlob(blob: Blob, filename: string) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+
+    a.href = url;
+    a.download = filename || 'download';
+
+    // Click handler that releases the object URL after the element has been clicked
+    // This is required for one-off downloads of the blob content
+    const clickHandler = () => {
+        setTimeout(() => {
+        URL.revokeObjectURL(url);
+        removeEventListener('click', clickHandler);
+        }, 150);
+    };
+
+    // Add the click event listener on the anchor element
+    a.addEventListener('click', clickHandler, false);
+    a.click()
+}
 
 async function getFirstBatchSensorData(){
     const route = useRoute()
