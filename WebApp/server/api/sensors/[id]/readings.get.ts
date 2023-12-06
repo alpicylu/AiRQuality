@@ -29,7 +29,7 @@ export default defineEventHandler( async(event) => {
         if (!/^[0-9a-fA-F]{24}$/g.test(queryParams.cursor)) createError({
             statusCode: 400,
             statusMessage: "Bad Request",
-            message: `Invalid reading ID. Must be a hexadecimal string, 24-chars in length`
+            message: `Invalid reading cursor ID: ${readingIdCursor}. Must be a hexadecimal string, 24-chars in length`
         })
 
         readingIdCursor = queryParams.cursor 

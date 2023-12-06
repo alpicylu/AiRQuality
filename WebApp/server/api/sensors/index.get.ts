@@ -15,8 +15,6 @@ export default defineEventHandler( async(event) => {
         roomName = queryParams.room
     }
 
-
-
     let res
     try {
         res = await prisma.sensor.findMany({

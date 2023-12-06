@@ -37,6 +37,10 @@ const readingToDisplay = ref<DisplayType>(DisplayType.Temp)
 const nDataPointsOnChart = ref<number>(15) 
 const iqrfIdSensorList = ref<string[]>([])
 
+const cursorToSensorMap = ref(new Map())
+
+
+//Make this a composable (shared logic with index.vue)
 async function getFirstBatchSensorData(){
     const {data} = await useFetch("/api/sensors")
 
@@ -51,16 +55,28 @@ async function getFirstBatchSensorData(){
 
     let sensorReadingsObjectList: SingleSensorReadingsType[] = []
     await Promise.all(
-        iqrfIdSensorList.value.map((iqrfid) => useFetch<SingleSensorReadingsType>(`/api/sensors/${iqrfid}/readings?take=${nDataPointsOnChart.value}`))
+        iqrfIdSensorList.value.map((iqrfid) => useFetch<SingleSensorReadingsType>(`/api/sensors/${iqrfid}/readings?take=${nDataPointsOnChart.value}&order=desc`))
     ).then(res => {
-        res.forEach(el => { if (el.data.value !== null) sensorReadingsObjectList.push(el.data.value) })
-    }).catch(err => {
-        throw new Error(err)
-    })
+        res.forEach(el => { //each promise resolved with a value - iterate over those resolves
+            const sensorData = el.data.value
+            if (sensorData == null) return //if a sensor's data is null, skip to the next iteration
+            sensorReadingsObjectList.push(sensorData)
+            cursorToSensorMap.value.set(sensorData.iqrfId, sensorData.id.at(0))
+        })
+    }).catch(console.error)
 
     if (sensorReadingsObjectList.length !== iqrfIdSensorList.value.length) {
         throw new Error("Number of sensors that provided data is not equal to the amount of registered sensors")
     }
+
+    sensorReadingsObjectList.forEach(sensor => {
+        sensor.id.reverse()
+        sensor.time.reverse()
+        sensor.temp.reverse()
+        sensor.rehu.reverse()
+        sensor.co2c.reverse()
+    })
+
     fetchedSensorData.value = sensorReadingsObjectList
 
     console.log(fetchedSensorData.value)
@@ -71,44 +87,60 @@ async function getSmallReadingBatch(){
     //first, get the cursor - ID of the most recent fetched reading.
     //you need to get the last ID for every element in fetchedSensorData
 
-    for (let sensor of fetchedSensorData.value){
-        pushFakeSensorReadings(sensor)
+    // for (let sensor of fetchedSensorData.value){
+    //     pushFakeSensorReadings(sensor)
+    // }
+
+    let newReadings: (SingleSensorReadingsType|null)[] = []
+    await Promise.all(
+        iqrfIdSensorList.value.map((iqrf) => {
+            const sensorCurrentCursor = cursorToSensorMap.value.get(iqrf)
+            // console.log("map:", cursorToSensorMap)
+            // console.log("iqrf key and cursor", iqrf, sensorCurrentCursor)
+            return useFetch(`/api/sensors/${iqrf}/readings?take=${nDataPointsOnChart.value}&order=asc&cursor=${sensorCurrentCursor}`)
+        })
+    ).then(res => {
+        res.forEach(el => {
+            //we will push null from sensors that for some reasons didnt fetch
+            //to keep the sensors from newReadings and fetchedSensorData in the same order (and the arrs themselves in length)
+            const sensorData = el.data.value
+            newReadings.push(sensorData)
+            if (sensorData !== null && sensorData.id.length > 0) cursorToSensorMap.value.set(sensorData.iqrfId, sensorData.id.at(0))
+        })
+    }).catch(console.error)
+
+    console.log("Index fetched for new readings:")
+    console.log(newReadings)
+
+    //If at least 1 sensor returned any data, the function will continue
+    let totalNewReadings = 0
+    newReadings.forEach(el => {
+        if (el !== null) totalNewReadings += el.id.length
+    })
+    if (totalNewReadings === 0){
+        console.log("No new batches")
+        return
     }
 
-    //Note that i AM using 4 consecutive await-fetches instead of concurrent ones (provided by Promise.all)
-    //This is because otherwise i would have to resort to a for-loop within a forloop to match
-    //new fetched records with appropriate SingleSensorReadingsType objects 
-    //however, this is an async function and its called once every 15-minutes or so
-    // for (let sensor of fetchedSensorData.value){
-    //     const {data} = await useFetch(
-    //         `/api/sensors/${sensor.iqrfId}/readings?take=${nDataPointsOnChart.value}&cursor=${sensor.id[1]}`
-    //     ).catch(err => {
-    //         throw new Error(err)
-    //     })
+    //dont update readings from sensors that fetched null
+    //the i index represents individual sensors (SingleSensorReadingsType objects)
+    for (let i=0; i<newReadings.length; ++i){
+        if (newReadings[i] === null) continue   //dunno why i need to coerce the null here
+        fetchedSensorData.value[i].id = fetchedSensorData.value[i].id.concat(newReadings[i]!.id)
+        fetchedSensorData.value[i].time = fetchedSensorData.value[i].time.concat(newReadings[i]!.time)
+        fetchedSensorData.value[i].temp = fetchedSensorData.value[i].temp.concat(newReadings[i]!.temp)
+        fetchedSensorData.value[i].rehu = fetchedSensorData.value[i].rehu.concat(newReadings[i]!.rehu)
+        fetchedSensorData.value[i].co2c = fetchedSensorData.value[i].co2c.concat(newReadings[i]!.co2c)
 
-    //     if (data.value === null) {
-    //         console.log("No new batches this time")
-    //         return
-    //     }
-
-    //     //remove the oldest N records. Unfortunately, id, time and readings have their own arrays
-    //     //shift() takes no argument and does only one elem at a time.
-    //     sensor.id = sensor.id.concat(data.value.id)
-    //     sensor.time = sensor.time.concat(data.value.time)
-    //     sensor.temp = sensor.temp.concat(data.value.temp)
-    //     sensor.rehu = sensor.rehu.concat(data.value.rehu)
-    //     sensor.co2c = sensor.co2c.concat(data.value.co2c)
-
-    //     if (sensor.id.length > nDataPointsOnChart.value){
-    //         const nOldRecordsToRemove = data.value?.id.length 
-    //         sensor.id = sensor.id.slice(nOldRecordsToRemove)
-    //         sensor.time = sensor.time.slice(nOldRecordsToRemove)
-    //         sensor.temp = sensor.temp.slice(nOldRecordsToRemove)
-    //         sensor.rehu = sensor.rehu.slice(nOldRecordsToRemove)
-    //         sensor.co2c = sensor.co2c.slice(nOldRecordsToRemove)
-    //     }
-
-    // }
+        if (fetchedSensorData.value[i].id.length > nDataPointsOnChart.value){
+            const nOldRecordsToRemove = newReadings[i]!.id.length
+            fetchedSensorData.value[i].id = fetchedSensorData.value[i].id.slice(nOldRecordsToRemove)
+            fetchedSensorData.value[i].time = fetchedSensorData.value[i].time.slice(nOldRecordsToRemove)
+            fetchedSensorData.value[i].temp = fetchedSensorData.value[i].temp.slice(nOldRecordsToRemove)
+            fetchedSensorData.value[i].rehu = fetchedSensorData.value[i].rehu.slice(nOldRecordsToRemove)
+            fetchedSensorData.value[i].co2c = fetchedSensorData.value[i].co2c.slice(nOldRecordsToRemove)
+        }
+    }
 }
 
 //This is just to test adding new readings and popping old ones 

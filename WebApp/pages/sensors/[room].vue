@@ -105,7 +105,7 @@ const dateB = ref('')
 /*the first cursor will be assigned with the id of the newest reading fetched from getFirstBatchSensorData
 this will be used by the first poll of the pollServerForNewReadings func. This cursor gets overwritten with new IDs
 after new data is fetched.*/
-const batchCursor = ref<string>('')
+const batchCursor = ref<string|undefined>('')
 
 const chartReactiveOptions = computed(()=> {
     return {
@@ -253,6 +253,7 @@ async function getFirstBatchSensorData(){
     if (sensor === null || sensor === undefined) throw new Error("Failed to fetch specified sensor")
     sensorIqrfID.value = sensor
 
+    //desc - fetches newest records, but they are in reverse-chronological order - need to reverse it later
     const readings = await useFetch<SingleSensorReadingsType>(`/api/sensors/${sensorIqrfID.value}/readings?take=${nDataPointsOnChart.value}&order=desc`)
         .then(res => res.data.value)
         .catch(err => console.log(err))
@@ -264,7 +265,7 @@ async function getFirstBatchSensorData(){
     }
 
     //save first ID of reverse-chrono order as cursor for the first of the periodic polls. This cursor corresponds to the newest reading
-    batchCursor.value = readings.id[0]
+    batchCursor.value = readings.id.at(0)
     console.log("First cursor:", batchCursor.value)
 
     /*fetched newest records, but in reverse chrono order - need to reverse the matrix. reverse() mutates the array. */
@@ -398,9 +399,9 @@ async function getReadingsFromDateToDate() {
 }
 
 watch(() => chartDataTRCReadings.value, (newReadings, oldReadings) => {
-    tempChartBgColorUpdate(newReadings.temp, DisplayType.Temp)
-    rehuChartBgColorUpdate(newReadings.rehu, DisplayType.Rehu)
-    co2cChartBgColorUpdate(newReadings.co2c, DisplayType.CO2c)
+    tempChartBgColorUpdate(newReadings.temp.at(-1), DisplayType.Temp)
+    rehuChartBgColorUpdate(newReadings.rehu.at(-1), DisplayType.Rehu)
+    co2cChartBgColorUpdate(newReadings.co2c.at(-1), DisplayType.CO2c)
 }, {deep: true})
 
 

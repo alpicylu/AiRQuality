@@ -8,6 +8,8 @@ import { apiKey, gid, uid } from "../API_key"
 import type { SensorDataType } from "../../types/types"
 import { PrismaClient } from '@prisma/client'
 import type { Sensor } from '@prisma/client'
+import {minServerSensorPollDelay} from '~/constants/constants'
+
 const prisma = new PrismaClient()
 
 const FRONT_DEV_MODE = false
@@ -37,7 +39,8 @@ export default defineNitroPlugin( async(nitroApp) => {
         //interval, then a new task will begin before the previous one completed.
         //Im handling this by manually timing out (returning) the task if getting data from the server takes too long.
         //If the "dnld" command does not return within 6 retries, the callback returns with no response to the server
-        scheduleJob('*/1 * * * *', () => {
+        const min = minServerSensorPollDelay
+        scheduleJob(`*/${min} * * * *`, () => {
             pollSensors()
         })
     }

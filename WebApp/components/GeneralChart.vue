@@ -1,44 +1,43 @@
 <template>
     <div class="h-64 grid grid-cols-6 my-8">
-        <div class="row-span-6 col-span-1 bg-ext-content flex justify-start items-center text-5xl"> {{ room }} </div>
+        <div class="row-span-6 col-span-1 bg-ext-content flex justify-start items-center text-5xl"> {{ sensorData?.room }} </div>
         <div class="relative h-full w-full col-start-2 row-span-6 col-span-3">
-            <Line id="chart1" :options="chartOptions" :data="bogusData" :plugins="[backgroundColorPlugin]"/>
+            <Line id="chart1" :options="chartReactiveOptions" :data="chartReactiveData" :plugins="[backgroundColorPlugin]"/>
         </div>
         <form class="col-start-5 row-span-6 col-span-2 bg-ext-content grid grid-cols-5 place-content-around text-4xl">
-            <input type="radio" class="col-start-1 row-start-1" :id="room + 'temp'" :value=DisplayType.Temp :name="room" v-model="radioButtonsRead" :checked=tempCheck>
-            <label class="grid-col" :for="room + 'temp'">T</label>
-            <div class="col-span-3 flex justify-end items-center"> 23 &#8451; </div>
+            <input type="radio" class="col-start-1 row-start-1" :id="sensorData?.room + 'T'" :value=DisplayType.Temp :name="sensorData?.room" v-model="valueOfRadioGroup" :checked=tempCheck>
+            <label class="grid-col" :for="sensorData?.room + 'T'">T</label>
+            <div class="col-span-3 flex justify-end items-center"> {{ sensorData?.temp.at(-1) }} &#8451; </div>
 
-            <input type="radio" class="col-start-1 row-start-2" :id="room + 'rehu'" :value=DisplayType.Rehu :name="room" v-model="radioButtonsRead" :checked="rehuCheck">
-            <label class="col-start-2" :for="room + 'rehu'">RH</label>
-            <div class="col-span-3 flex justify-end items-center"> 23 % </div>
+            <input type="radio" class="col-start-1 row-start-2" :id="sensorData?.room + 'R'" :value=DisplayType.Rehu :name="sensorData?.room" v-model="valueOfRadioGroup" :checked="rehuCheck">
+            <label class="col-start-2" :for="sensorData?.room + 'R'">RH</label>
+            <div class="col-span-3 flex justify-end items-center"> {{ sensorData?.rehu.at(-1) }} % </div>
 
-            <input type="radio" class="col-start-1 row-start-3" :id="room + 'co2c'" :value=DisplayType.CO2c :name="room" v-model="radioButtonsRead" :checked="co2cCheck">
-            <label class="col-start-2" :for="room + 'co2c'">CO2</label>
-            <div class="col-span-3 flex justify-end items-end"> 230 ppm </div>
+            <input type="radio" class="col-start-1 row-start-3" :id="sensorData?.room + 'C'" :value=DisplayType.CO2c :name="sensorData?.room" v-model="valueOfRadioGroup" :checked="co2cCheck">
+            <label class="col-start-2" :for="sensorData?.room + 'C'">CO2</label>
+            <div class="col-span-3 flex justify-end items-end"> {{ sensorData?.co2c.at(-1) }} ppm </div>
         </form>
     </div>
     <div class="bg-ext-margins h-1 rounded-full w-full mx-auto"></div>
 </template>
 
 <script setup lang="ts">
-// tree-shakable imports
 import { Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
-import { DisplayType } from '../types/enums'
-import type { SensorDataType } from '../types/types'
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
+import type {SensorDataType, SingleSensorReadingsType} from '~/types/types'
+import {DisplayType, SortOptions, ChartHealthStatus} from '~/types/enums'
+import {formatDatesToHourMinute} from '~/utils/formatDateTimeStrings'
+// import {} from '~/utils/calculateSafetyValue'
+
 const props = defineProps<{
-    room: string
     checkAllRadios: DisplayType
-    sensorData?: SensorDataType[]
+    sensorData?: SingleSensorReadingsType
 }>()
 
-//For whatever reason, once the charts are fully loaded they set the radio buttons' checked property to false, and
-//i want the temperature button to be enabled by default.
-//To circumvent that, it set teh checked prop to false at first, wait untill the component fully loads, and then set it to true
-//which works marvelously
+const valueOfRadioGroup = ref<DisplayType>(props.checkAllRadios)
+
 const tempCheck = ref(false)
 onMounted(() => {
     tempCheck.value = true
@@ -46,32 +45,39 @@ onMounted(() => {
 const rehuCheck = ref(false)
 const co2cCheck = ref(false)
 
-const chartOptions = ref({
-    responsive: true,
-    maintainAspectRatio: false,
-})
 const chartData = ref<number[]>([])
-const chartBgColor = ref('#00CC99')
+const chartTime = ref<string[]>([])
 
-const radioButtonsRead = ref(DisplayType.Temp);
+const {bgColor, updateBgColor} = useDynamicChartBgColor()
 
-//Chart data we pass to the chart element. Vue-chartjs needs it to be a computed property if we want the data to be dynamic
-//see vue-chartjs docs
-const bogusData = computed(() => { 
+const chartReactiveOptions = computed(() => {
     return {
-        labels: [...Array(chartData.value.length).keys()],
-        datasets: [{ 
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: {
+            duration: 0
+        },
+        plugins: {
+            legend: {
+                display: false
+            },
+        }
+    }
+})
+
+const chartReactiveData = computed(() => {
+    return {
+        labels: chartTime.value, //if labels are undefined, the chart just wont display data (good)
+        datasets: [{
             data: chartData.value,
-            label: 'Data',
-            backgroundColor: '#DA4167',
-            borderColor: '#7C90DB'
+            tension: 0.4,
+            borderColor: '#000000',
+            color: '#000000',
+            fontColor: '#000000'
         }]
     }
 })
 
-//the plugin that we pass to the graph that allows for changing the bg color. 
-//since i also want this color to change in certain cases, i defined a ref
-//and referenced it in the plugin. Changing the ref value will change the bg color
 const backgroundColorPlugin = computed(() => {
     return {
         id: 'customCanvasBackgroundColor',
@@ -79,95 +85,58 @@ const backgroundColorPlugin = computed(() => {
             const {ctx} = chart;
             ctx.save();
             ctx.globalCompositeOperation = 'destination-over';
-            ctx.fillStyle = options.color || chartBgColor.value;
+            ctx.fillStyle = options.color || bgColor.value;
             ctx.fillRect(0, 0, chart.width, chart.height);
             ctx.restore();
         }
     }
 });
 
-//TODO WHAT IS THIS BRUH WHY DID I MAKE 3 SEPARATE SWITCHES
-function getReadingFromSensorData(type: DisplayType){
-    var tempArr: number[] = []
-    switch (type){
+function displayReadingBasedOnRadio(){
+    if (props.sensorData === undefined) return
+    switch (valueOfRadioGroup.value){
         case DisplayType.Temp:
-            props.sensorData?.forEach((elem, index) => {
-                tempArr.push(elem.temp)
-            })
-    }
-    switch (type){
+            chartData.value = props.sensorData.temp
+            break
         case DisplayType.Rehu:
-            props.sensorData?.forEach((elem, index) => {
-                tempArr.push(elem.rehu)
-            })
-    }
-    switch (type){
+            chartData.value = props.sensorData.rehu
+            break
         case DisplayType.CO2c:
-            props.sensorData?.forEach((elem, index) => {
-                tempArr.push(elem.co2c)
-            })
+            chartData.value = props.sensorData.co2c
+            break
     }
-    chartData.value = tempArr 
 }
 
-//I need to give myself more credit for this.
-//Previously i had a problem where the charts would display data only when i would hot-reload them, or something like that.
-//Whatever the core issue was, this watch seems to solve it.
-//What really happens is:
-//  the ref() in index.vue that v-binds to chart's sensorData prop starts with an array of zeroed objects that are immediately
-//sent to the charts
-//  the fetch is called and takes about a second to provide the app with data
-//  the charts render those zeroes resulting in all flat lines accross all charts
-//  the fetch request concludes and saves data the ref() that if v-bound to the charts
-//  the below watcher notices the change in the prop, splits and saves data to the array that holds data to be displayed.
-//gRFSD gets the current display value as its argument. If it were set to a constant (eg. DisplayType.Temp) that would cause
-//the charts to not display the data properly after sorting. That is because sorting recalculates the sensorData prop, thus triggering
-//this watcher, which with a constant default value would cause all charts to display a constant type of data (temps/rehu/co2). The
-//proper display type would only be applied after enabling a different radio and enabling the correct one.
-watch(() => props.sensorData, (newData, oldData) => {
-    console.log("Sensor data watcher triggered")
-    getReadingFromSensorData(props.checkAllRadios) 
-})
-
-//I want the value from the "display" dropdown to set the checked status on all apropriate checkboxes
-//watching props requires "wraping" the prop in a lambda.
-//this is basically equivalent to changing all radio buttons to a specific value manually (but faster).
-//all it does is change the "checked" value of radios + update radioButtonsRead, which is a ref() that radios v-model to.
 watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
-    if (newCheck === DisplayType.Temp){
-        rehuCheck.value = co2cCheck.value = false
-        tempCheck.value = true
-        radioButtonsRead.value = newCheck
-    }
-    else if (newCheck === DisplayType.Rehu){
-        tempCheck.value = co2cCheck.value = false
-        rehuCheck.value = true
-        radioButtonsRead.value = newCheck
-    }
-    else if (newCheck === DisplayType.CO2c){
-        rehuCheck.value = tempCheck.value = false
-        co2cCheck.value = true
-        radioButtonsRead.value = newCheck
+    switch (newCheck){
+        case DisplayType.Temp:
+            rehuCheck.value = co2cCheck.value = false
+            tempCheck.value = true
+            valueOfRadioGroup.value = newCheck
+            break
+        case DisplayType.Rehu:
+            tempCheck.value = co2cCheck.value = false
+            rehuCheck.value = true
+            valueOfRadioGroup.value = newCheck
+            break
+        case DisplayType.CO2c:
+            rehuCheck.value = tempCheck.value = false
+            co2cCheck.value = true
+            valueOfRadioGroup.value = newCheck
+            break
     }
 })
 
-//change charts (presented data and bg color) depending on which radio button is active 
-//changing an individual radio button triggers this watcher.
-watch(radioButtonsRead, (newRead, oldread) => {
-    console.log("current radio value:", newRead)
-    if (newRead === DisplayType.Temp){
-        getReadingFromSensorData(DisplayType.Temp) //make an api call to fetch data here
-        chartBgColor.value = '#00CC99'
-    }
-    else if (newRead === DisplayType.Rehu){
-        getReadingFromSensorData(DisplayType.Rehu)
-        chartBgColor.value = '#FFEE88'
-    }
-    else if (newRead === DisplayType.CO2c){
-        getReadingFromSensorData(DisplayType.CO2c)
-        chartBgColor.value = '#DD1155'
-    }
+watch(() => valueOfRadioGroup.value, (newVal, oldVal) => {
+    displayReadingBasedOnRadio()
 })
- 
+
+watch(() => props.sensorData, (newData, oldData) => {
+    console.log("Charts received new data")
+    displayReadingBasedOnRadio()
+    updateBgColor(chartData.value.at(-1), valueOfRadioGroup.value)
+    if (newData !== undefined) chartTime.value = formatDatesToHourMinute(newData.time)
+}, {deep: true})
+
 
 </script>

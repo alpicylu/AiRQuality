@@ -36,7 +36,7 @@ import type { SensorDataType, SingleSensorReadingsType } from "../types/types"
 import { DisplayType , ChartHealthStatus} from "../types/enums"
 
 const props = defineProps<{
-    sensorReadings: SingleSensorReadingsType, //making it undefined so that charts will just be empty if no data
+    sensorReadings?: SingleSensorReadingsType, //making it undefined so that charts will just be empty if no data
     readingToDisplay: DisplayType
 }>()
 
@@ -285,7 +285,7 @@ watch(() => props.sensorReadings, (newReadings, oldReadings) => {
         choseSensorReadingToDisplay(newReadings)
     }
     // setChartBgColorBasedOnLastReading()   
-    updateBgColor(chartData.value, props.readingToDisplay) 
+    updateBgColor(chartData.value.at(-1), props.readingToDisplay) 
 
 }, {deep: true}) //need to watch for nested objects to change, not just the object itself
 //without deep: true, this watcher is "shallow"
@@ -296,7 +296,12 @@ watch(() => props.readingToDisplay, (newDisplay, oldDisplay) => {
         choseSensorReadingToDisplay(props.sensorReadings)
     }
     // setChartBgColorBasedOnLastReading()
-    updateBgColor(chartData.value, props.readingToDisplay) 
+    try {
+        updateBgColor(chartData.value.at(-1), props.readingToDisplay) 
+    }catch (err){
+        console.log(err)
+    }
+    
     drawLinesBasedOnReadingType(newDisplay)
     changeChartScaleBasedOnReadingType(newDisplay)
 })
