@@ -23,8 +23,8 @@ Spis skrótów i akronimów
 
 4. Projekt aplikacji webowej do prezentacji graficznej parametrów jakości powietrza 
 Zastosowane technologie
-    * jakie frameworki oraz biblioteki zostały użyte w aplikacji
-    * uzasadnienie wyborów
+    * jakie frameworki oraz biblioteki zostały użyte w aplikacji DONE
+    * uzasadnienie wyborów DONE 
     * opis działania elementów aplikacji webowej
     * prezentacja widoków aplikacji webowej
 

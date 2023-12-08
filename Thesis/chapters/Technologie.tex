@@ -1,0 +1,39 @@
+\section{Zastosowane technologie}
+
+\subsection{Nuxt}
+Nuxt jest frameworkiem integrującym ze sobą inne pomniejsze frameworki - \textbf{Vue.js, Nitro} i \textbf{Vite}. 
+Oprócz zalet zapewnianych przez wspomniane rozwiązania, Nuxt dodatkowo wspiera takie technologie jak 
+renderowanie uniwersalne, routing oparty na hierarchii plików w projekcie czy automatyczne importowanie modułów.
+Został on wybrany przede wszystkim na ówczesną znajomość fameworku Vue.js \cite{nuxt-js}.
+
+\textbf{Vue.js} jest frameworkiem frontendowym opartym na JavaScript'cie (JS). Jego główne cechy to renderowanie deklaratywne
+pozwalające na opisanie wyjściowego HTML na podstawie stanu zmiennych w JS dzięki szablonom oraz reaktywność, czyli
+automatyczna zmiana DOM w wyniku zmiany stanu JS \cite{vue-js}
+
+\textbf{Nitro} - framework backendowy pozwalający modyfikować zachowanie serwera na podstawie samo-rejestrujących się
+pluginów oraz "haków" - funkcji, które ulegają uruchomieniu w odpowiedzi na pewne zdarzenia związane z serwerem
+(np. zamknięcie, błąd, zapytanie...) \cite{nitro-js}
+
+\textbf{Vite} to narzędzie służące do budowania strony i pakietowania jej plików. Wykorzystuje natywne moduły ECMAScript
+w celu przyśpieszenia procesu rozwijania i wdrażania aplikacji. \cite{vite-js}
+
+
+\subsection{MongoDB}
+Jako silnik bazy danych wybrano MongoDB Community Edition - baza typu no-SQL w której dane przechowywane są w postaci
+dokumentów w formacie BSON (Binary JSON). Nie wymaga definiowana sztywnego schematu, co pozwala na dynamiczną ewolucję
+struktur bazodanowych \cite{mongo-db}
+
+\subsection{Prisma}
+W celu połączenia aplikacji z bazą danych wybrano bibliotekę do mapowania obiektowo-relacyjnego (ORM) pod nazwą Prisma.
+Dzięki zdefiniowaniu schematu bazy oraz rozwiniętemu API klienta pozwala na komunikacje z bazą w sposób syntaktycznie 
+przypominający JSON zamiast "surowych" poleceń SQL. \cite{prisma-io}
+
+\subsection{Inne}
+W celu przyśpieszenia procesu stylizowania stron oraz pozbycia się osobnych plików, w których zdefiniowane są klasy CSS
+użyto \textbf{Tailwind} - frameworku CSS posiadającego bogaty wachlarz mikro-klas, które można dowolnie łączyć w celu
+wystylizowania elementu \cite{tailwind-css}
+
+Wyświetlanie wykresów reagujących na zmiane danych jest możliwe dzięki zastosowaniu biblioteki ChartJS, a dokładnie
+wersji specjalnie przeznaczonej do integracji z frameworkiem Vue.js - \textbf{vue-chartjs} \cite{chart-js} \cite{vue-chartjs}
+
+Ze względu na typowanie zmiennych oraz łatwiejszą detekcję błędów wybrano język TypeScript zamiast JavaScript.
