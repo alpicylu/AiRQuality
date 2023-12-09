@@ -1,1 +1,36 @@
 \section{Serwer aplikacji webowej}
+
+Serwer oprócz wysłania do przeglądarki klienta kodu aplikacji spełnia również funkcje zbierania danych z czujników. W tym celu wysyła on okresowe zapytania
+do serwera IQRF Cloud o pobór danych z czujników, które są następnie pobierane, filtrowane, formatowane i zapisywane do bazy danych. Pojedynczy cykl serwera składa
+się z kroków opisanych w podrozdziałach.
+
+\subsection{Odczyt surowych danych z czujników}
+Co około 5 minut serwer wysyła zapytanie do IQRF Cloud o odczyty z czujników jakości powietrza. W tym celu wysyła szereg zapytań na adres
+"https://cloud.iqrf.org/api/api.php?ver=2\&gid=xxx\&uid=xxx\&cmd=uplc\&data=xxx\&signature=xxx".
+
+[Zdjęcie funkcji co dzwoni do serwera]
+
+Adres zapytania jest konstruowany za pomocą funkcji \textbf{constructURL}
+
+Ilość takich zapytań jest równa ilości czujników istniejących
+w bazie danych. Parametry zapytania "ver", "gid" oraz "uid" to odpowiednio wersja API serwera, ID bramki IQRF oraz ID użytkownika i dla każdego zapytania są one 
+stałe. Parametr "cmd" dla tego zapytania przyjmuje wartość "uplc" - upload command, co powoduje przesłanie do serwera IQRF Cloud danych z parametru "data".
+W przypadku tego zapytania do IQRF Cloud przesyłane są dane specyfikujące z jakiego czujnika mają zostać pobrane dane, oraz jakie dane to mają być. 
+Przykładowo: \textbf{01005E010140FFFFFFFF} oznacza pobór danych o temperaturze, wilgotności i dwutlenku węgla z czujnika o ID 1. Więcej informacji na ten temat 
+można odczytać z rodziału "\nameref{system}" oraz z dokumentacji \cite{protronix-comms}.
+
+Dane z czujników są zapisywane na serwerze IQRF Cloud, nie na serwerze tej aplikacji webowej, trzeba je więc pobrać w osobnym zapytaniu. 
+Po wysłaniu pierwszego zapytania (cmd=uplc) serwer oczekuje gotowej odpowiedzi do odczytania z serwera IQRF Cloud. Jako, że tylko serwer tej aplikacji może inicjować przesył danych
+konieczne było zastosowanie mechanizmu pollingu, w którym serwer co jakiś czas wysyła zapytanie do IQRF Cloud o to, czy odpowiednie dane są gotowe do odbioru
+
+[Screen z pollingu]
+
+Zapytanie, jakie serwer aplikacji wysyła do serwisu IQRF Cloud jest tym razem 
+"https://cloud.iqrf.org/api/api.php?ver=2\&gid=xxx\&uid=xxx\&cmd=dnld\&new=1\&signature=xxx". W porównaniu z poprzednim zapytaniem zmienia się tutaj wartość parametru
+"cmd" na "dnld" - download, oraz zostaje dodany nowy parametr, "new=1", który pozwala na pobieranie najnowszych danych z serwera. Jeżeli serwe IQRF Cloud dostarczy dane
+w odpowiednim czasie i odpowiedniej liczbie prób, serwer przechodzi do następnej fazy, czyli filtrowania i formatowania danych. W przypadku braku odpowiedzi po
+pewnej liczbie zapytań serwer przestaje odpytywać zewnętrzny serwer i przechodzi do następnego cyklu.
+
+
+
+
