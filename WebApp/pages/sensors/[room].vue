@@ -1,22 +1,22 @@
 <template>
 
-    <div class="flex flex-initial h-full w-full">
+    <div class="flex flex-initial h-full w-full mt-5">
 
         <div class="basis-1/2 flex flex-col flex-auto justify-between gap-4 min-w-0">
 
-            <div class="basis-1/12 flex justify-center items-center">SALA</div>
+            <div class="basis-1/12 flex justify-center items-center text-3xl">{{ chartDataTRCReadings.room }}</div>
 
-            <div class="basis-3/12 flex flex-initial justify-center items-center">
+            <div class="basis-3/12 flex flex-initial justify-center items-center min-h-0">
                 <h1 class="w-2/12 break-all text-center">Temperature</h1>
                 <div class="w-10/12 h-full"><Line :data="tempChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginTempChart]"/></div>
             </div>
 
-            <div class="basis-3/12 flex flex-initial justify-center items-center">
+            <div class="basis-3/12 flex flex-initial justify-center items-center min-h-0">
                 <h1 class="w-2/12 break-all text-center">Rel. humidity</h1>
                 <div class="w-10/12 h-full"><Line :data="rehuChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginRehuChart]"/></div>
             </div>
 
-            <div class="basis-3/12 flex flex-initial justify-center items-center">
+            <div class="basis-3/12 flex flex-initial justify-center items-center min-h-0">
                 <h1 class="w-2/12 break-all text-center">CO2 content</h1>
                 <div class="w-10/12 h-full"><Line :data="co2cChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginCo2cChart]"/></div>
             </div>
@@ -32,12 +32,13 @@
         </div>
 
         <div class="basis-1/2 flex flex-col flex-auto justify-between gap-4">
+
             <div class="basis-1/12 flex justify-around items-center">
-                <h1>NOW</h1>
-                <h1>MAX</h1>
-                <h1>MIN</h1>
-                <h1>AVG</h1>
-                <h1>UNIT</h1>
+                <h1 class="text-2xl">NOW</h1>
+                <h1 class="text-2xl">MAX</h1>
+                <h1 class="text-2xl">MIN</h1>
+                <h1 class="text-2xl">AVG</h1>
+                <h1 class="text-2xl">UNIT</h1>
             </div>
 
 
@@ -55,7 +56,7 @@
 
 
             <div class="basis-1/12 flex justify-center items-center">
-                <button @click="buttonTestFunction">BUTTON</button>
+                <button @click="buttonTestFunction" class="bg-ext-margins rounded-full p-3">CSV</button>
             </div>
 
         </div>
@@ -377,7 +378,7 @@ async function getReadingsFromDateToDate() {
     readings.co2c = readings.co2c.filter((el, i) => i % decimationFactor === 0)
 
     // //save readings
-    // chartDataTRCReadings.value = readings
+    chartDataTRCReadings.value = readings
 
     //Decide on time-axis labels. Times are undefined if no readings were fetched
     const daysOfDifference = calcDateDiff(readings.time.at(0), readings.time.at(-1))

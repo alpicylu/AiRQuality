@@ -6,7 +6,10 @@ Użytkownik posiada opcję wyboru jaki typ odczytu będzie prezentowany na wykre
 poprzez interakcję z guzikami "radiowymi" dla każdego czujnika/sali oraz dla każdego z czujników jednocześnie poprzez wybranie typu
 w liście rozwijanej. 
 
-[SCREEN Z WIDOKU]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/app/main.png}
+    \caption{Zrzut ekranu przedstawiający widok główny}
+\end{figure}
 
 Dane z czujników przedstawione na wykresach są aktualizowane tak często, jak stają się one dostępne, biorąc pod uwagę opóźnienia związane
 z cyklicznym odpytywaniem serwera o nowe dane czy straty czasu związane z samym przesyłem danych. Stan jakości powietrza jest dodatkowo
@@ -21,7 +24,10 @@ Po kliknięciu na dowolny z elementów odpowiadających czujnikowi na poprzednim
 bieżące pomiary wszystkich trzech typów, podstawowe statystyki odczytów z danego zakresu (wartości: aktualna, maksymalna, minimalna, średnia arytmetyczna), 
 podać zakres pomiarów do wyświetlenia oraz pobrać plik CSV zawierający dane z podanego zakresu.
 
-[Widok]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/app/details.png}
+    \caption{Zrzut ekranu przedstawiający widok szczegółów}
+\end{figure}
 
 Wybór zakresu odbywa się poprzez wybranie dwóch dat - początkowej i końcowej - w lewej dolnej części widoku. Daty można wpisać ręcznie lub posłużyć się
 selektorem dat pojawiającym się po naciśnięciu w element. Aby wyświetlić dane z wybranego przedziału należy kliknąć w przycisk "Apply", po czym z serwera pobierane
@@ -29,16 +35,34 @@ są odpowiednie dane i ładowane do widoku. W tym trybie nowe dane nie są pobie
 Aby powrócić do domyślnej formy prezentowania odczytów (ładowanie danych na bieżąco) należy nacisnąć przycisk "Default". Bieżące oraz zaległe dane z odczytów
 zaczną znowu być ładowane do widoku.
 
-[Wybór daty]
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.5\textwidth]{zdj/app/date-pick.png}
+    \caption{Wybieranie daty}
+\end{figure}
 
-[Zmiana jednostki czasu na wykresie]
-
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.7\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{zdj/app/time-unit1.png}
+        \caption{Jednostki w trybie domyślnym (24 najnowszych rekordów)}
+    \end{subfigure}
+    \begin{subfigure}{0.7\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{zdj/app/time-unit2.png}
+        \caption{Jednostki po wybraniu okresu z ostatniego tygodnia}
+    \end{subfigure}
+       
+    \caption{Schematy porównujące obie topologie sieci}
+\end{figure}
 W celu pobrania danych z wyznaczonego zakresu w postaci pliku CSV należy nacisnąć na przycisk "CSV". Otworzy to okienko pozwalające użytkownikowi wybranie folderu
 zapisu pliku oraz zmianę jego nazwy. 
 
-[pobieranie pliku]
-
-[wygląd pliku]
+\begin{figure}[H]
+    \includegraphics[width=0.6\textwidth]{zdj/app/download-csv.png}
+    \caption{Pobieranie danych na komputer użytkownika}
+\end{figure}
 
 \subsection{Widok prezentacyjny}
 Aplikacja posiada również widok pozwalający na czytelne i estetyczne zaprezentowanie danych bliżej nie określonej grupie odbiorców, na przykład poprzez wyświetlenie

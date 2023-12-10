@@ -12,7 +12,7 @@ import {minServerSensorPollDelay} from '~/constants/constants'
 
 const prisma = new PrismaClient()
 
-const FRONT_DEV_MODE = false
+const FRONT_DEV_MODE = true
 
 //TODO TOP LEVEL AWAIT NOT PERMISSIBLE
 var sensorList: Sensor[] //gets a list of all available sensors
@@ -215,7 +215,6 @@ function parseRawServerData(rawData: string): Array<SensorDataType | null> | nul
 //we need to filter out responses that we dont really caer about, like "GW connected" or "talked to a sensor"
 function filterSensorData(rawSensor: string): boolean {
     if (rawSensor.slice(0, 4) === "0000") return false //data sent by GW once it connects to the server
-    // else if (rawSensor.length != 32 && rawSensor.length != 38) return false //every crucial-data-containing message
     //a propper sensor-message-data-thing has a sequence of bytes: XXXX.5E.81.(0140|0150)
     const filterRex = /(\d{4})(5E81)(0140|0150)(00)(?:[A-Z0-9]+)/g
     const matches = [...rawSensor.matchAll(filterRex)][0]
@@ -249,6 +248,7 @@ function parseSensorData(rawSensor: string): SensorDataType | null {
     only one element on the first "layer" of the array */
     const arr2 = [...rawSensor.matchAll(re2)][0] 
     sensorId = arr2[1] //arr2[0] is the entire substring that matched the regex
+    //TODO Consider storing IQRFID as a dec or hexadec number instead of this wierd "0100" byteswapped hybrid
     const sensorReadings = arr2.slice(2,5) //we omit sensorID because we dont want to cahnge it at all - it gets added later
     if (arr2.groups?.bat !== undefined){
         sensorReadings.push(arr2.groups.bat) //TODO: test if this clause is robust

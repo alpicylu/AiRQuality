@@ -1,4 +1,4 @@
-<template>
+<!-- <template>
     <div class="h-64 grid grid-cols-6 my-8">
         <div class="row-span-6 col-span-1 bg-ext-content flex justify-start items-center text-5xl"> {{ room }} </div>
         <div class="relative h-full w-full col-start-2 row-span-6 col-span-3">
@@ -170,4 +170,4 @@ watch(radioButtonsRead, (newRead, oldread) => {
 })
  
 
-</script>
+</script> -->

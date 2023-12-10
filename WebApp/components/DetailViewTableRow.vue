@@ -1,17 +1,10 @@
 <template>
 
-    <!-- <tr>
-        <td>{{ now }}</td>
-        <td>{{ min }}</td>
-        <td>{{ max }}</td>
-        <td>{{ avg }}</td>
-    </tr> -->
-
-    <div>{{ now }}</div>
-    <div>{{ min }}</div>
-    <div>{{ max }}</div>
-    <div>{{ avg }}</div>
-    <div>{{ readingToDisplayTypeAbbrev.unit }}</div>
+    <div class="text-2xl">{{ now }}</div>
+    <div class="text-2xl">{{ min }}</div>
+    <div class="text-2xl">{{ max }}</div>
+    <div class="text-2xl">{{ avg }}</div>
+    <div class="text-2xl">{{ readingToDisplayTypeAbbrev.unit }}</div>
 
 </template>
 
@@ -61,3 +54,11 @@ watch(() => props.sensorReadings, (newVal, oldVal) => {
 })
 
 </script>
+
+<style>
+
+/* div:nth-of-type(2) {
+    background-color: rgb(127 29 29)
+} */
+
+</style>
