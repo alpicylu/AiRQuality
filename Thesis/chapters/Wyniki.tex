@@ -1,0 +1,28 @@
+\section{Obserwacje i wnioski}
+
+\subsection{Zalety aplikacji}
+
+Aplikacja pozwala na bieżąco monitorować stan powietrza w niektórych salach Politechniki Wrocławskiej. W trakcie pisania pracy są to
+cztery czujniki rozmieszczone w czterech różnych salach budynku C2. Dzięki zapisowi do bazy danych możliwe jest badanie danych historycznych z dowolnych
+przedziałów, co pozwala obserwować wpływ takich czynników jak liczebność studentów w sali czy pora roku na jakość powietrza w budynku.
+
+Prowadzenie innych statystyk i praca z danymi jest również możliwa dzięki możliwości pobrania danych w formacie CSV. Czytelny interfejs pomaga w 
+szybkiej ocenie przebiegu parametrów na przestrzeni dnia lub innego wybranego okresu
+
+\subsection{Wady i rozwój}
+
+W trakcie prac nad projektem wielokrotnie doświadczano trudności związanych z obsługą urządzeń wykorzystujących technologię IQRF. Czujniki zdawały się
+być bardzo "wrażliwe" na jakiekolwiek zmiany w ich otoczeniu, w tym rejestracja i wyrejestrowywanie innych czujników z systemu. Podczas montażu
+czujniki wielokrotnie wysyłały enigmatyczny komunikat o błędzie w odpowiedzi na próbę ich zdalnego wyrejestrowania, bądź nawet odmawiały
+przeprowadzenia tej procedury ręcznie. 
+Nie udały się również próby aktualizacji oprogramowania czujników, które skutkowały brakiem komunikacji między danym czujnikiem, a bramką. 
+Czujniki zdają się też zużywać baterię o wiele szybciej, niż powinny, pomimo ustawienia ich w tryb "Low Power".
+
+Pojawiały się również problemy związane z łącznością zarejestrowanych czujników, gdzie jednego razu system ukazywał widoczność wszystkich włączonych
+czujników, aby po pewnym czasie utracić do nich zasięg. Część z tych problemów może być jednak skutkiem samego umiejscowienia, takiego jak bliskość 
+pomieszczeń serwerowni, które mogą emitować znaczne zakłócenia.
+
+Natomiast w domenie samej aplikacji należało by zwrócić uwagę na strukturę bazy danych. MongoDB wspiera tak zwane odczyty TimeSeries, które są o wiele
+bardziej przystosowane do przechowywania danych występujących w stałych odcinkach czasowych.
+
+...
