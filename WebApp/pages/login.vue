@@ -1,8 +1,12 @@
 <template>
 
-    <button @click="signIn({ username: 'jsmith', password: 'hunter2' })"></button>
+    <div>
+
+    <button @click="signIn({ username: 'test', password: 'hunter2' })">BANG</button>
 
     <pre>{{ data }}</pre>
+
+    </div>
 
 </template>
 

@@ -19,6 +19,5 @@ export default defineNuxtConfig({
             }
         },
         isEnabled: true,
-        baseURL: "/api/auth"
     }
 })

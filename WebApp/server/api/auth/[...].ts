@@ -2,6 +2,8 @@
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { NuxtAuthHandler } from '#auth'
 
+//TODO try installing next-auth as a dependency. Didnt work yesterday but hey
+
 export default NuxtAuthHandler({
   // A secret string you define, to ensure correct encryption
   secret: 'your-secret-here',
@@ -23,6 +25,8 @@ export default NuxtAuthHandler({
         // submitted and returns either a object representing a user or value
         // that is false/null if the credentials are invalid.
         // NOTE: THE BELOW LOGIC IS NOT SAFE OR PROPER FOR AUTHENTICATION!
+
+        console.log("asdfasdfa")
 
         const user = { id: '1', name: 'J Smith', username: 'jsmith', password: 'hunter2' }
 
