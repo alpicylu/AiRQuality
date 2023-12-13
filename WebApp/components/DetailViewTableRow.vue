@@ -1,8 +1,8 @@
 <template>
 
     <div class="text-2xl">{{ now }}</div>
-    <div class="text-2xl">{{ min }}</div>
     <div class="text-2xl">{{ max }}</div>
+    <div class="text-2xl">{{ min }}</div>
     <div class="text-2xl">{{ avg }}</div>
     <div class="text-2xl">{{ readingToDisplayTypeAbbrev.unit }}</div>
 

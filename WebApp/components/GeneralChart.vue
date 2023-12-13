@@ -1,6 +1,6 @@
 <template>
     <div class="h-64 grid grid-cols-6 my-8">
-        <div class="row-span-6 col-span-1 bg-ext-content flex justify-start items-center text-5xl"> {{ sensorData?.room }} </div>
+        <NuxtLink :to="linkableRoomName" class="row-span-6 col-span-1 bg-ext-content flex justify-start items-center text-5xl"> {{ sensorData?.room }} </NuxtLink>
         <div class="relative h-full w-full col-start-2 row-span-6 col-span-3">
             <Line id="chart1" :options="chartReactiveOptions" :data="chartReactiveData" :plugins="[backgroundColorPlugin]"/>
         </div>
@@ -37,6 +37,12 @@ const props = defineProps<{
 }>()
 
 const valueOfRadioGroup = ref<DisplayType>(props.checkAllRadios)
+
+// const linkableRoomName = ref<string>(`/sensors/${props.sensorData?.room.replace(/\s/g, "_")}`)
+
+const linkableRoomName = computed(() => `/sensors/${props.sensorData?.room.replace(/\s/g, "_")}`)
+
+
 
 const tempCheck = ref(false)
 onMounted(() => {

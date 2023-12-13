@@ -72,7 +72,19 @@ import { DisplayType } from '~/types/enums';
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
 import {formatDatesToHourMinute, formatDatesToHourDayMonth, formatDatesToDayMonth, formatDatesToDayMonthYear} from "~/utils/formatDateTimeStrings"
-import fs from 'node:fs'
+
+// definePageMeta({
+//   validate: async (route) => {
+//     // Check if the id is made up of digits
+//     // const route = useRoute()
+//     // return /C\d\_\d{3}/g.test(route.params.room as string)
+//     //doesnt work, define separate room middleware
+//     console.log(route.params.room)
+//     const exists = await checkIfCurrentRoomExists()
+//     console.log(exists)
+//     return exists
+//   }
+// })
 
 onMounted(() => {
     getFirstBatchSensorData()
@@ -397,6 +409,24 @@ async function getReadingsFromDateToDate() {
     else {
         chartTime.value = formatDatesToDayMonthYear(readings.time)
     }
+}
+
+async function checkIfCurrentRoomExists(){
+    const route = useRoute()
+    const sensors = await useFetch(`/api/sensors`)
+    .then(res => {
+        return res.data.value?.sensors
+    })
+    .catch(console.error)
+
+    let exists = false
+    sensors?.forEach(el => {
+        el.name.replace(/\s/g, '_')
+        if (el.name === route.params.room) exists = true
+    })
+
+    console.log("in function:", exists)
+    return exists
 }
 
 watch(() => chartDataTRCReadings.value, (newReadings, oldReadings) => {
