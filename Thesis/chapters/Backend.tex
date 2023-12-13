@@ -8,11 +8,17 @@ się z kroków opisanych w podrozdziałach.
 Co około 5 minut serwer wysyła zapytanie do IQRF Cloud o odczyty z czujników jakości powietrza. W tym celu wysyła szereg zapytań na adres \\
 'https://cloud.iqrf.org/api/api.php?ver=2\&gid=xxx\&uid=xxx\\\&cmd=uplc\&data=xxx\&signature=xxx'.
 
-[Zdjęcie funkcji co dzwoni do serwera]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/app/poll-fragment.png}
+    \caption{Fragment funkcji odpowiedzialnej za wysyłanie do serwera IQRF Cloud odpytań o stan czujników}
+\end{figure}
 
 Adres zapytania jest konstruowany za pomocą funkcji \textbf{constructURL}
 
-[Funkcja]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/app/construct-url.png}
+    \caption{Funkcje konstruujące adres zapytania}
+\end{figure}
 
 Ilość takich zapytań jest równa ilości czujników istniejących
 w bazie danych. Parametry zapytania 'ver', 'gid' oraz 'uid' to odpowiednio wersja API serwera, ID bramki IQRF oraz ID użytkownika i dla każdego zapytania są one 
@@ -25,13 +31,11 @@ Dane z czujników są zapisywane na serwerze IQRF Cloud, nie na serwerze tej apl
 Po wysłaniu pierwszego zapytania (cmd=uplc) serwer oczekuje gotowej odpowiedzi do odczytania z serwera IQRF Cloud. Jako, że tylko serwer tej aplikacji może inicjować przesył danych
 konieczne było zastosowanie mechanizmu pollingu, w którym serwer co jakiś czas wysyła zapytanie do IQRF Cloud o to, czy odpowiednie dane są gotowe do odbioru
 
-[Screen z pollingu]
-
 Zapytanie, jakie serwer aplikacji wysyła do serwisu IQRF Cloud jest tym razem \\
 'https://cloud.iqrf.org/api/api.php?ver=2\&gid=xxx\&uid=xxx\\\&cmd=dnld\&new=1\&signature=xxx'. \\ W porównaniu z poprzednim zapytaniem zmienia się tutaj wartość parametru
 'cmd' na 'dnld' - download, oraz zostaje dodany nowy parametr, 'new=1', który pozwala na pobieranie najnowszych danych z serwera. Jeżeli serwe IQRF Cloud dostarczy dane
 w odpowiednim czasie i odpowiedniej liczbie prób, serwer przechodzi do następnej fazy, czyli filtrowania i formatowania danych. W przypadku braku odpowiedzi po
-pewnej liczbie zapytań serwer przestaje odpytywać zewnętrzny serwer i przechodzi do następnego cyklu.
+pewnej liczbie zapytań serwer przestaje odpytywać zewnętrzny serwer i po odczekaniu pozostałego w tym cyklu czasu przechodzi do następnego cyklu.
 
 \subsection{Filtrowanie i formatowanie danych}
 Dane pobrane z serwera IQRF Cloud mają postać niezdatną do zapisu w bazie danych oraz nieprzyjazną dla użytkownika końcowego. Dodatkowo, nie wszystkie dane pobrane z 
@@ -40,43 +44,65 @@ bramki do sieci. Z punktu widzenia aplikacji nie są to istotne dane.
 
 Dane pobrane z serwera mają następujący format:
 
-[Zdjęcie formatu danych z IQRF Cloud]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/app/data-shape-iqrf.png}
+    \caption{Format danych odbieranych z IQRF Cloud \cite{iqrfcloud-guide}}
+\end{figure}
 
 Taki surowy ciąg danych (maksymalnie do 1000 rekordów jednocześnie) jest przekazywany do funkcji \underline{parseRawServerData}, która z powyższego ciągu znaków
 wydziela pojedyncze rekordy.
 
-[Wspomniana funkcja]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/app/parse-raw.png}
+    \caption{Funkcja formatująca surowe dane}
+\end{figure}
 
 Każdy rekord jest pobierany iteracyjnie z tablicy wydzielonych rekordów do funkcji \\ \underline{parseSensorData}, gdzie zanim dojdzie do sformatowania rekordu 
 dochodzi do jego filtracji - sprawdzenia, czy rekord zawiera potrzebne dane oraz czy pochodzi z czujnika zarejestrowanego w systemie. Rekordy, które nie przeszły filtracji 
 są zwracane jako wartość \textbf{null}
 
-[Funkcja filtrująca]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/app/filter.png}
+    \caption{Funkcja filtrująca dane niezawierające użytecznych danych}
+\end{figure}
 
 Następnie każdy rekord jest parsowany i zapisywany do obiektu typu SensorDataType, gdzie na samym końcu do wspomnianego
 obiektu zapisywana jest data i godzina pobranego rekordu w formacie opartym na ISO 8601 (YYYY-MM-DDTHH:mm:ss.sssZ). 
 Parsowanie rekordu polega na przepuszczeniu go przez szereg wyrażeń regularnych (RegEx'ów), a tak powstałe tokeny są następnie zamieniane na liczby
 dziesiętne i mnożone przez odpowiednie stałe \cite{protronix-comms} w celu otrzymania wyniku w rzeczywistych jednostkach.
 
-[Typ obiektu SDT]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/app/type.png}
+    \caption{Typ danych jakie powstają w wyniku parsowania}
+\end{figure}
 
-[Funkcja parseSensorData]
+\begin{figure}[H]
+    \includegraphics[width=\textwidth]{zdj/app/parse-sensor.png}
+    \caption{Funkcja parsująca pojedynczy rekord do postaci liczbowej}
+\end{figure}
 
 \subsection{Zapis do bazy danych}
 
 Po zakończonym procesie filtrowania i formatowania dane są zapisywane do bazy danych. Zapis do bazy jest konieczny, gdyż serwer IQRF Cloud może przechowywać
 jednocześnie tylko 2000 rekordów, w co wliczają się rekordy nie niosące żadnej informacji o czujnikach.
 
-[Funkcja zapisująca do bazy]
-
 \subsection{Baza danych}
 
 Jak wcześniej wspomniano, za silnik wybrano nierelacyjną bazę danych MongoDB. W tej bazie istnieją tylko dwie kolekcje - jedna z nich zawiera wszystkie zarejestrowane 
 czujniki, druga zaś wszystkie odczyty ze wspomnianych czujników 
 
-[Rekord czujnika]
-
-[Rekord odczytu]
-
-
+\begin{figure}[H]
+\begin{subfigure}{0.5\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{zdj/app/db-sensor.png}
+    \caption{Wygląd pojedynczego rekordu przedstawiającego czujnik w bazie danych}
+\end{subfigure}
+\begin{subfigure}{0.5\textwidth}
+    \centering
+    \includegraphics[width=0.8\linewidth]{zdj/app/db-reading.png}
+    \caption{Wygląd pojedynczego rekordu przedstawiającego odczyt z czujnika w bazie danych}
+\end{subfigure}
+   
+\caption{Struktura rekordów w bazie danych}
+\end{figure}
 
