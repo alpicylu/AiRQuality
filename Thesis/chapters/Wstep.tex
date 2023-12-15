@@ -1,13 +1,16 @@
 \section{Wstęp}
 
 Praca stanowi system monitorowania jakości powietrza w wybranych salach Politechniki Wrocławskiej. Na system składają się
-czujniki wraz z bramką umożliwiającą komunikację z nimi oraz aplikację webową. Parametry jakości powietrza jakie system monitoruje 
+czujniki wraz z bramką umożliwiającą komunikację z nimi, aplikacja webowa oraz zewnętrzny serwis IQRF Cloud służący w roli pośrednika
+Między aplikacją a systemem czujników.
+Aplikacja webowa została napisana za pomocą dostępnych frameworków i bibliotek, a czujniki, bramka i serwis zostały skonfigurowana
+w sposób zapewniający poprawne działanie w tym systemie. Parametry jakości powietrza jakie system monitoruje 
 to temperatura, wilgotność względna oraz stężenie dwutlenku węgla. Sama aplikacja zaś umożliwia monitorowanie danych, zarówno 
 bieżących jak i historycznych.
 
 Ze względu na zmiany klimatyczne oraz pogarszający się stan powietrza wewnętrznego, szczególnie w miesiącach zimowych, ważne jest jego 
 regularne monitorowanie. Człowiek spędza znaczną część swojego życia właśnie w pomieszczeniach zamkniętych, więc powietrze w nich
-będzie miało znaczny wpływ na jego zdrowie, a monitorowanie parametrów jakości powietrza jest kluczowym elementem wpływania na nie.
+będzie miało znaczny wpływ na jego zdrowie, a monitorowanie parametrów powietrza jest kluczowym elementem wpływania na ich jakość.
 
 Zasadnicza część pracy składa się z 6 rozdziałów. Pierwszy z nich opisuje parametry jakości powietrza jakie system monitoruje, ich wpływ 
 na zdrowie i komfort oraz bezpieczne wartości. Drugi opisuje ogół systemu, począwszy od czujników, przez bramkę, serwis IQRF Cloud i kończąc

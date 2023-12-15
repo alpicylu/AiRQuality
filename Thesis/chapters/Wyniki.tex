@@ -22,8 +22,11 @@ Pojawiały się również problemy związane z łącznością zarejestrowanych c
 czujników, aby po pewnym czasie utracić do nich zasięg. Część z tych problemów może być jednak skutkiem samego umiejscowienia, takiego jak bliskość 
 pomieszczeń serwerowni, które mogą emitować znaczne zakłócenia.
 
-Natomiast w domenie samej aplikacji należało by zwrócić uwagę na strukturę bazy danych. MongoDB wspiera tak zwane odczyty TimeSeries, które są o wiele
+Natomiast w domenie samej aplikacji należało by zwrócić uwagę na strukturę bazy danych. MongoDB wspiera tak zwane odczyty TimeSeries, które są
 bardziej przystosowane do przechowywania danych występujących w stałych odcinkach czasowych.
+
+W dalszym ciągu rozwoju aplikacji powinno się rozważyć wprowadzenie systemu uwierzytelniania. Aktualnie żadne podstrony ani ścieżki nie są chronione w taki sposób.
+Z drugiej strony natomiast aplikacja nie udostępnia żadnych wrażliwych danych oprócz tych zbieranych z czujników.
 
 \subsection{Obserwacje}
 

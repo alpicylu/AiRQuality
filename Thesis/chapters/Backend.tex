@@ -89,20 +89,21 @@ jednocześnie tylko 2000 rekordów, w co wliczają się rekordy nie niosące ża
 \subsection{Baza danych}
 
 Jak wcześniej wspomniano, za silnik wybrano nierelacyjną bazę danych MongoDB. W tej bazie istnieją tylko dwie kolekcje - jedna z nich zawiera wszystkie zarejestrowane 
-czujniki, druga zaś wszystkie odczyty ze wspomnianych czujników 
+czujniki, druga zaś wszystkie odczyty ze wspomnianych czujników. 
 
 \begin{figure}[H]
 \begin{subfigure}{0.5\textwidth}
     \centering
     \includegraphics[width=\linewidth]{zdj/app/db-sensor.png}
-    \caption{Wygląd pojedynczego rekordu przedstawiającego czujnik w bazie danych}
+    \caption{Wygląd pojedynczego rekordu z kolekcji "Sensors" przedstawiającego czujnik w bazie danych}
 \end{subfigure}
 \begin{subfigure}{0.5\textwidth}
     \centering
     \includegraphics[width=0.8\linewidth]{zdj/app/db-reading.png}
-    \caption{Wygląd pojedynczego rekordu przedstawiającego odczyt z czujnika w bazie danych}
+    \caption{Wygląd pojedynczego rekordu z kolekcji "Records" przedstawiającego odczyt z czujnika w bazie danych}
 \end{subfigure}
    
 \caption{Struktura rekordów w bazie danych}
 \end{figure}
+
 
