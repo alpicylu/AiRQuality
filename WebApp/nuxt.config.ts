@@ -2,22 +2,15 @@
 export default defineNuxtConfig({
     ssr: false,
     devtools: { enabled: true },
+    app: {
+        head: {
+            title: "AiRQuality"
+        }
+    },
     typescript: {
         typeCheck: true
     },
     modules: [
         '@nuxtjs/tailwindcss',
-        '@sidebase/nuxt-auth'
     ],
-    auth: {
-        provider: {
-            type: 'local',
-            sessionDataType: {
-              	id: 'string',
-				name: 'string',
-				role: 'guest | admin' 
-            }
-        },
-        isEnabled: true,
-    }
 })

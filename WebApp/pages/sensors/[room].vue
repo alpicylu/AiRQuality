@@ -72,19 +72,29 @@ import { DisplayType } from '~/types/enums';
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
 
 import {formatDatesToHourMinute, formatDatesToHourDayMonth, formatDatesToDayMonth, formatDatesToDayMonthYear} from "~/utils/formatDateTimeStrings"
+import {msClientServerPollDelay} from "~/constants/constants"
 
-// definePageMeta({
-//   validate: async (route) => {
-//     // Check if the id is made up of digits
-//     // const route = useRoute()
-//     // return /C\d\_\d{3}/g.test(route.params.room as string)
-//     //doesnt work, define separate room middleware
-//     console.log(route.params.room)
-//     const exists = await checkIfCurrentRoomExists()
-//     console.log(exists)
-//     return exists
-//   }
-// })
+definePageMeta({
+    middleware: [
+        async function (to, from){
+            const sensors = await useFetch(`/api/sensors`)
+            .then(res => {
+                return res.data.value?.sensors
+            })
+            .catch(console.error)
+
+            let exists = false
+            sensors?.forEach(el => {
+                const nameWithFloor = el.name.replace(/\s/g, '_')
+                if (nameWithFloor === to.params.room)
+                    exists = true
+            })
+
+            console.log("in function:", exists)
+            if (!exists) return abortNavigation()
+        }
+    ]
+})
 
 onMounted(() => {
     getFirstBatchSensorData()
@@ -97,8 +107,6 @@ onUnmounted(() => {
         pollServerInterval = null
     }
 })
-
-const serverIntervalPoll = 1000*10
 
 const chartDataTRCReadings = ref<SingleSensorReadingsType>(<SingleSensorReadingsType>{}) //this is where fetched data is saved
 const chartTime = ref<string[]>([])
@@ -291,7 +299,7 @@ async function getFirstBatchSensorData(){
     chartDataTRCReadings.value = readings
     chartTime.value = formatDatesToHourMinute(chartDataTRCReadings.value.time)
 
-    if (pollServerInterval === null) pollServerInterval = setInterval(() => {pollServerForNewReadings()}, serverIntervalPoll)    
+    if (pollServerInterval === null) pollServerInterval = setInterval(() => {pollServerForNewReadings()}, msClientServerPollDelay)    
 }
 
 async function pollServerForNewReadings(){
@@ -411,7 +419,7 @@ async function getReadingsFromDateToDate() {
     }
 }
 
-async function checkIfCurrentRoomExists(){
+async function checkIfCurrentRoomExists(to: string, from: string){
     const route = useRoute()
     const sensors = await useFetch(`/api/sensors`)
     .then(res => {
@@ -438,7 +446,7 @@ watch(() => chartDataTRCReadings.value, (newReadings, oldReadings) => {
 
 var pollServerInterval: null|NodeJS.Timeout = setInterval(() => {
     pollServerForNewReadings()
-}, serverIntervalPoll)
+}, msClientServerPollDelay)
 
 
 

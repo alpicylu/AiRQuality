@@ -20,10 +20,12 @@ definePageMeta({
 
 onMounted(() => {
     getFirstBatchSensorData()
+    window.addEventListener("keydown", ExitOnEscPress)
 })
 
 onUnmounted(() => {
     clearInterval(changeReadingToDisplayInterval)
+    window.removeEventListener("keydown", ExitOnEscPress)
 })
 
 //get the number of registered sensors from the DB
@@ -170,6 +172,12 @@ function pushFakeSensorReadings(sensor: SingleSensorReadingsType) {
 
 }
 
+function ExitOnEscPress(event: KeyboardEvent){
+    if (event.code === "Escape") {
+        const router = useRouter()
+        router.back()
+    }
+}
 
 
 const displayTypeArr = [DisplayType.Temp, DisplayType.Rehu, DisplayType.CO2c]

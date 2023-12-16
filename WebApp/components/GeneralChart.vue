@@ -7,7 +7,7 @@
         <form class="col-start-5 row-span-6 col-span-2 bg-ext-content grid grid-cols-5 place-content-around text-4xl">
             <input type="radio" class="col-start-1 row-start-1" :id="sensorData?.room + 'T'" :value=DisplayType.Temp :name="sensorData?.room" v-model="valueOfRadioGroup" :checked=tempCheck>
             <label class="grid-col" :for="sensorData?.room + 'T'">T</label>
-            <div class="col-span-3 flex justify-end items-center"> {{ sensorData?.temp.at(-1) }} &#8451; </div>
+            <div class="col-span-3 flex justify-end items-center"> {{ tempDisplayable }} &#8451; </div>
 
             <input type="radio" class="col-start-1 row-start-2" :id="sensorData?.room + 'R'" :value=DisplayType.Rehu :name="sensorData?.room" v-model="valueOfRadioGroup" :checked="rehuCheck">
             <label class="col-start-2" :for="sensorData?.room + 'R'">RH</label>
@@ -29,7 +29,6 @@ ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScal
 import type {SensorDataType, SingleSensorReadingsType} from '~/types/types'
 import {DisplayType, SortOptions, ChartHealthStatus} from '~/types/enums'
 import {formatDatesToHourMinute} from '~/utils/formatDateTimeStrings'
-// import {} from '~/utils/calculateSafetyValue'
 
 const props = defineProps<{
     checkAllRadios: DisplayType
@@ -38,11 +37,7 @@ const props = defineProps<{
 
 const valueOfRadioGroup = ref<DisplayType>(props.checkAllRadios)
 
-// const linkableRoomName = ref<string>(`/sensors/${props.sensorData?.room.replace(/\s/g, "_")}`)
-
 const linkableRoomName = computed(() => `/sensors/${props.sensorData?.room.replace(/\s/g, "_")}`)
-
-
 
 const tempCheck = ref(false)
 onMounted(() => {
@@ -97,6 +92,14 @@ const backgroundColorPlugin = computed(() => {
         }
     }
 });
+
+const tempDisplayable = computed(() => {
+    const temp = props.sensorData?.temp.at(-1)
+    if (temp !== undefined){
+        return Math.round(temp * 10)/10
+    }
+    return undefined
+})
 
 function displayReadingBasedOnRadio(){
     if (props.sensorData === undefined) return

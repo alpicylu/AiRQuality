@@ -5,9 +5,8 @@
                 <nav>
                 <div class="flex justify-evenly items-start mt-2">
                     <NuxtLink to="/">Home</NuxtLink>
-                    <NuxtLink to="/testPage">Settings</NuxtLink>
+                    <NuxtLink to="/displayTv">TV</NuxtLink>
                     <NuxtLink>Log In</NuxtLink>
-                    <NuxtLink>Help</NuxtLink>
                     <NuxtLink>About</NuxtLink>
                 </div>
                 </nav>
