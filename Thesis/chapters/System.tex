@@ -56,22 +56,25 @@ wilgotności, dwutlenku węgla i baterii, jeżeli jej stan jest niski.
 \subsection{Czujniki i bramka IQRF}
 
 Urządzeniami bezpośrednio odpowiedzialnymi za pobieranie z otoczenia danych o jakości powietrza są cztery czujniki NLB-CO2+RH+T-5-IQRF firmy
-Protronix. Każdy czujnik jest w stanie odczytać temperaturę, wilgotność względną oraz zawartość dwutlenku węgla w powietrzu. Zasilanie jest zapewniane
-bateryjnie poprzez dwie baterie AA 1.5V, a komunikacja odbywa się poprzez zamontowany w gnieździe SIM nadajnikoodbiornik (transceiver) IQRF. Każdy taki sensor stanowi węzeł sieci IQRFMESH.
+Protronix (Rys. \ref{czujnik}). Każdy czujnik jest w stanie odczytać temperaturę, wilgotność względną oraz zawartość dwutlenku węgla w powietrzu. Zasilanie jest zapewniane
+bateryjnie poprzez dwie baterie AA 1.5V, a komunikacja odbywa się poprzez zamontowany w gnieździe SIM nadajnikoodbiornik (transceiver) IQRF.
+Każdy taki sensor stanowi węzeł sieci IQRFMESH.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{zdj/NLB-CO2RHT-5-IQRF.jpg}
     \caption{Podglądowe zdjęcie wykorzystywanego czujnika \cite{protronix-product}}
+    \label{czujnik}
 \end{figure}
 
-Koordynatorem sieci jest bramka GW-ETH02 zasilana sieciowo napięciem 5VDC. Urządzenie łączy się z Internetem poprzez gniazdo Ethernet oraz
+Koordynatorem sieci jest bramka GW-ETH02 (Rys. \ref{bramka}) zasilana sieciowo napięciem 5VDC. Urządzenie łączy się z Internetem poprzez gniazdo Ethernet oraz
 posiada gniazdo karty SD jako jedną z opcji zapisu danych. Bramka posiada wbudowany transceiver IQRF.
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.5\textwidth]{zdj/gateway.png}
     \caption{Podglądowe zdjęcie bramki \cite{gateway-product}}
+    \label{bramka}
 \end{figure}
 
 \subsubsection{Konfiguracja}
@@ -92,12 +95,13 @@ do komputera. Parametry bramki zostały ustawione na wartości przewidziane prze
 się również, że bramka będzie działała z urządzeniami LP (Low Power), poprzez wybranie na panelu odpowiedniego ustawienia sieci STD+LP.
 
 Następnie każdy z transceiverów przeznaczonych do montażu w czujnikach został tymczasowo zamontowany w programatorze CK-USB-04A będącego częścią
-zestawu IoT Starter Kit w celu sprawdzenia poprawności ustawień transceivera zgodnie z zaleceniami producenta.
+zestawu IoT Starter Kit w celu sprawdzenia poprawności ustawień transceivera zgodnie z zaleceniami producenta (Rys. \ref{fab-conf}).
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.7\textwidth]{zdj/protronix-settings.png}
     \caption{Fabryczna konfiguracja modułów TR. Wycinek z \cite{protronix-comms}}
+    \label{fab-conf}
 \end{figure}
 
 \subsubsection{Topologia sieci}
@@ -105,7 +109,7 @@ zestawu IoT Starter Kit w celu sprawdzenia poprawności ustawień transceivera z
 To, w jakiej topologii będą pracowały czujniki sieci IQRF MESH zależy od odległości między czujnikiem a bramką. W przypadku 
 mniejszych dystansów wszystkie czujniki będą bezpośrednio połączone bezprzewodowo z bramką - topologia gwiazdy. Jeżeli natomiast
 odległości są znaczne niektóre węzły sieci mogą sprawować również funkcję routerów, przekierowujących pakiety między innymi 
-węzłami i bramką. W takim przypadku mamy do czynienie z topologią siatki (ang. mesh).
+węzłami i bramką. W takim przypadku mamy do czynienie z topologią siatki (Rys. \ref{topologies}).
 
 \begin{figure}[H]
 
@@ -122,29 +126,32 @@ węzłami i bramką. W takim przypadku mamy do czynienie z topologią siatki (an
 \end{subfigure}
    
 \caption{Schematy porównujące obie topologie sieci}
+\label{topologies}
 
 \end{figure}
 
-[ZDJĘCIE Z IQRF IDE PANEL MESH]
+Dzięki dosyć małej odległości od siebie i od bramki udało się uzyskać topologię gwiazdy.
 
 \subsection{Serwer IQRF Cloud}
 
 IQRF Cloud jest serwisem w chmurze umożliwiającym komunikację z bramką IQRF po jej zarejestrowaniu w tymże serwisie, w którym uprzednio należy
 założyć konto. Po rejestracji serwis umożliwia obustronną komunikację z urządzeniem w postaci wiadomości protokołu DPA. Aby takową nadać należy 
-wejść w panel zarejestrowanej bramki i wybrać opcję "Send command to gateway":
+wejść w panel zarejestrowanej bramki i wybrać opcję 'Send command to gateway' (Rys. \ref{send-comm}):
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.4\textwidth]{zdj/send-command-to-gw.png}
     \caption{Opcja "Send command to gateway"}
+    \label{send-comm}
 \end{figure}
 
 Po wybraniu tej opcji otrzymujemy widok umożliwiający wysyłanie do brami wiadomości protokołem DPA, a każde nadanie wymaga dodatkowo podania
-hasła do bramki wybieranego na etapie konfiguracji.
+hasła do bramki wybieranego na etapie konfiguracji (Rys. \ref{send-data}).
 
 \begin{figure}[H]
     \includegraphics[width=\textwidth]{zdj/cloud-send-message.png}
     \caption{Fragment panelu umożliwiający wysłanie danych z serwera chmury do bramki}
+    \label{send-data}
 \end{figure}
 
 Dane odbierane/wysyłane przez serwer i bramkę są widoczne w panelu głównym odpowiednim dla bramki. Na serwerze może istnieć jednocześnie tylko 2000
@@ -164,9 +171,10 @@ Każdy rekord skład się z:
 \begin{figure}[H]
     \includegraphics[width=\textwidth]{zdj/cloud-records.png}
     \caption{Fragment tabeli otrzymanych wiadomości w IQRF Cloud}
+    \label{records-frag}
 \end{figure}
 
-Powyższy panel jednak stanowi dla tej pracy bardziej narzędzie diagnostyczne niż kluczowy element działania systemu - z poziomu działania aplikacji
+Widok pokazany na Rys. \ref{records-frag} stanowi jednak dla tej pracy bardziej narzędzie diagnostyczne niż kluczowy element działania systemu - z poziomu działania aplikacji
 webowej nie da się wejść w interakcję z tym panelem, a przynajmniej nie jest to przewidziane. Serwis udostępnia więc własny interfejs 
 programistyczny (API), który umożliwia przesyłanie zapytań z innego urządzenia do tego serwisu i w konsekwencji do bramki oraz czujników.
 
@@ -204,7 +212,7 @@ Bardziej szczegółowy opis wszystkich parametrów oraz ograniczenia w ich stoso
 
 \subsubsection{Sygnatura zapytania}
 
-Jakakolwiek komunikacja z serwerem wymaga podaniu parametru \textbf{signature}, który gwarantuje bezpieczeństwo przesyłu danych przez API 
+Jakakolwiek komunikacja z serwerem wymaga podania parametru \textbf{signature}, który gwarantuje bezpieczeństwo przesyłu danych przez API 
 potwierdzając prawo dostępu użytkownika do danych. Dokumentacja \cite{iqrfcloud-guide} definiuje sygnaturę następująco:
 
 \begin{figure}[H]
@@ -217,7 +225,7 @@ Gdzie:
     \item parameter\_part - ciąg znaków adresu URL zapytania pomiędzy adresem bazowym a sygnaturą. Na przykład, dla zapytania \\
 'https://cloud.iqrf.org/api/api.php?ver=2\&uid=xxx\&gid=xxx\&cmd=dnld\&signature=xxx \\ 
 wartość ta jest równa "ver=2\&uid=xxx\&gid=xxx\&cmd=dnld'
-    \item api\_key - klucz API dostępny po zalogowaniu się do portalu IQRF Cloud
+    \item api\_key - klucz API dostępny po zalogowaniu się do portalu IQRF Cloud (Rys. \ref{api-key})
     \item ip\_address - adres IP klienta
     \item timestamp - liczba sekund począwszy od 01.01.1970 00:00UTC podzielona przez 600. Podzielenie przez 600 zapewnia 10-minutową
 ważność każdej sygnatury.
@@ -229,6 +237,7 @@ ważność każdej sygnatury.
 \begin{figure}[H]
     \includegraphics[width=\textwidth]{zdj/api-key.png}
     \caption{Fragment widoku profilu użytkownika. Czerwoną strzałką wskazano klucz API.}
+    \label{api-key}
 \end{figure}
 
 Kompletne zapytanie składa się z adresu bazowego, ciągu parametrów oraz sygnatury. Na przykład:

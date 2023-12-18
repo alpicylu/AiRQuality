@@ -138,6 +138,7 @@ watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
 
 watch(() => valueOfRadioGroup.value, (newVal, oldVal) => {
     displayReadingBasedOnRadio()
+    updateBgColor(chartData.value.at(-1), valueOfRadioGroup.value)
 })
 
 watch(() => props.sensorData, (newData, oldData) => {

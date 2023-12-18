@@ -303,13 +303,6 @@ async function getFirstBatchSensorData(){
 }
 
 async function pollServerForNewReadings(){
-
-    //I messed something oup. Check if the cursor is passed correctly (i did inverse the order in readings.get)
-    //its probably the combination of the descending order and inversing. Maybe im paginating backawrds?
-    //is cursor with orderBy: desc moving "backwards"?
-    //getting doubled readings - those do exist in the DB so its not a query problem
-    //you will have to modify readings.get to allow for 2 styles of ordering.
-
     //with ascending order, last cursor should be at index 0? since we are flipping the arrays in readings.get?
     const readings = await useFetch<SingleSensorReadingsType>( //note that .at(-1) can produce undefined, which will be passed as 'undefined' (string) here
         `/api/sensors/${sensorIqrfID.value}/readings?take=${nDataPointsOnChart.value}&order=asc&cursor=${batchCursor.value}`
@@ -419,23 +412,23 @@ async function getReadingsFromDateToDate() {
     }
 }
 
-async function checkIfCurrentRoomExists(to: string, from: string){
-    const route = useRoute()
-    const sensors = await useFetch(`/api/sensors`)
-    .then(res => {
-        return res.data.value?.sensors
-    })
-    .catch(console.error)
+// async function checkIfCurrentRoomExists(to: string, from: string){
+//     const route = useRoute()
+//     const sensors = await useFetch(`/api/sensors`)
+//     .then(res => {
+//         return res.data.value?.sensors
+//     })
+//     .catch(console.error)
 
-    let exists = false
-    sensors?.forEach(el => {
-        el.name.replace(/\s/g, '_')
-        if (el.name === route.params.room) exists = true
-    })
+//     let exists = false
+//     sensors?.forEach(el => {
+//         el.name.replace(/\s/g, '_')
+//         if (el.name === route.params.room) exists = true
+//     })
 
-    console.log("in function:", exists)
-    return exists
-}
+//     console.log("in function:", exists)
+//     return exists
+// }
 
 watch(() => chartDataTRCReadings.value, (newReadings, oldReadings) => {
     tempChartBgColorUpdate(newReadings.temp.at(-1), DisplayType.Temp)

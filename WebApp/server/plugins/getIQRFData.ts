@@ -14,7 +14,6 @@ const prisma = new PrismaClient()
 
 const FRONT_DEV_MODE = false
 
-//TODO TOP LEVEL AWAIT NOT PERMISSIBLE
 var sensorList: Sensor[] //gets a list of all available sensors
 //This is not secure, i know it, but cloud.iqrf's SSL cert has expired. With the certificate being not valid.
 //the only option is to not verify their validity.
@@ -34,7 +33,7 @@ export default defineNitroPlugin( async(nitroApp) => {
         // await prisma.reading.deleteMany({}) 
 
         sensorList = await getSensorList()
-        //scheduleJob will make the passed-in function run in a specified interval (every 15 mins)
+        //scheduleJob will make the passed-in function run in a specified interval (every N mins)
         //node-schedule does not prevent callback overrun by itself - if the callback takes longer than the schedule
         //interval, then a new task will begin before the previous one completed.
         //Im handling this by manually timing out (returning) the task if getting data from the server takes too long.
@@ -52,7 +51,6 @@ we send with the request. We take all of those and mash them through the md5 has
 // BIG TODO: How to secure sensitive data on the server
 //How to provide TS type definitions: https://stackoverflow.com/questions/45247991/is-there-a-way-to-add-type-definition-globally-in-typescript-2 
 //using an index signature to dynamically define object properties
-//https://stackoverflow.com/questions/12710905/how-do-i-dynamically-assign-properties-to-an-object-in-typescript 
 async function constructSignature(parameter_part: string): Promise<string> {
     const api_key = apiKey
     const publicIPv4Address: string = await publicIpv4() //good
@@ -127,15 +125,15 @@ async function pollSensors() {
         console.log(failedRequests)
     }
 
-    /*If everything went smoothly during the last fetch, we are ready to get the aquired data from the cloud.
+    /*If everything went smoothly during the last fetch, we are ready to get the acquired data from the cloud.
     Problem is, theres an indeterminate winidow of time between the Gateway registering the "uplc" call, and data
-    actually being placed on the server - sending reqests to GW, polling sensors, getting that data to GW and sending it to server
+    actually being placed on the server - sending requests to GW, polling sensors, getting that data to GW and sending it to server
     all take time.
     So what i did here is attempt to get the sensor data every 10 seconds and repeat this process up to 6 times
     resulting in a max wait time of 1min. To achieve this behavior i needed to wrap the setInterval timer function
     in a promise. Had i not wrapped it so, the timered function would not block, and i want it to block because i want
     the server to wait for its data. */
-    //TODO make this into setTimeout loop
+    //TODO make this into setTimeout loop to avoid possible call interference
     if (atLeastOnePassed) await new Promise< (SensorDataType|null)[] >((resolve, reject) => {
         const repLimit = 4
         var reps = 0
@@ -219,7 +217,7 @@ function filterSensorData(rawSensor: string): boolean {
     return true 
 }
 
-/*From parseRawServerData this function gets a string of 20-40 haxadecimal characters (up to 64 Bytes, 128 chars)
+/*From parseRawServerData this function gets a string of 20-40 hexadecimal characters (up to 64 Bytes, 128 chars)
 This string contains device ID, command that was issued, peripheral address, hardware profile, error code, DPA version
 and finally the data that was sent from the sensor. We pretty much only care about the data and sensor ID. 
 The data that this function gets is equivalent to 1 record from IQRF cloud*/

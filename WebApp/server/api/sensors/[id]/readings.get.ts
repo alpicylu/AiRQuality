@@ -95,7 +95,7 @@ export default defineEventHandler( async(event) => {
                         temp: true,
                         rehu: true,
                         co2c: true,
-                        id: true //although useless for displaying, its crucial for cursor-based pagination (dislplayTv)
+                        id: true //although useless for displaying, its crucial for cursor-based pagination
                     },
                     where: dateFilter,
                     orderBy: {timestamp: sortOrder }, //take the latest readings first
@@ -146,15 +146,6 @@ export default defineEventHandler( async(event) => {
         result.rehu.push(el.rehu)
         result.co2c.push(el.co2c)
     })
-
-    // //this is so that records are returned in a chronological order (IF orderBy is set to desc)
-    // for (let readingIndex = raw.readings.length-1; readingIndex >= 0; --readingIndex){
-    //     result.id.push(raw.readings[readingIndex].id)
-    //     result.time.push(raw.readings[readingIndex].timestamp.toISOString())
-    //     result.temp.push(raw.readings[readingIndex].temp)
-    //     result.rehu.push(raw.readings[readingIndex].rehu)
-    //     result.co2c.push(raw.readings[readingIndex].co2c)
-    // }
 
     return result
 })

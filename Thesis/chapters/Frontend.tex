@@ -1,14 +1,16 @@
 \section{Widoki aplikacji i opis ich działania}
 
 \subsection{Widok główny}
-Widok główny pozwala na ogólną prezentację danych z czujników z domyślnego zakresu 24-godzin z zaznaczeniem, w której sali znajduje się dany czujnik. 
-Użytkownik posiada opcję wyboru jaki typ odczytu będzie prezentowany na wykresie (temperatura, wilgotność względna, stężenie CO2), zarówno indywidualnie 
-poprzez interakcję z guzikami "radiowymi" dla każdego czujnika/sali oraz dla każdego z czujników jednocześnie poprzez wybranie typu
-w liście rozwijanej. 
+Widok główny pokazany na Rys. \ref{main-view} pozwala na ogólną prezentację danych z czujników z domyślnego zakresu 24 najnowszych pomiarów zaznaczeniem, w której sali znajduje się dany czujnik. 
+Użytkownik posiada opcję wyboru jaki typ odczytu będzie prezentowany na wykresie (temperatura, wilgotność względna, stężenie CO$_2$), zarówno indywidualnie 
+poprzez interakcję z guzikami 'radiowymi' dla każdego czujnika/sali oraz dla każdego z czujników jednocześnie poprzez wybranie typu
+w liście rozwijanej 'Display'. Niestety, przez zmianę w sposobie z jakim kolejne wykresy są wyświetlane, nie udało
+się zaimplementować funkcjonalności sortowania wykresów poprzez listę 'Sort By' 
 
 \begin{figure}[H]
     \includegraphics[width=\textwidth]{zdj/app/main.png}
     \caption{Zrzut ekranu przedstawiający widok główny}
+    \label{main-view}
 \end{figure}
 
 Dane z czujników przedstawione na wykresach są aktualizowane tak często, jak stają się one dostępne, biorąc pod uwagę opóźnienia związane
@@ -20,18 +22,20 @@ Przedziały zostały dobrane na podstawie rozdziału "\nameref{opis-parametrow}"
 
 \subsection{Widok szczegółów}
 
-Po kliknięciu na dowolny z elementów odpowiadających czujnikowi na poprzednim widoku ukazuje się nam widok szczegółów danego czujnika. Można tutaj odczytać
+Po kliknięciu na dowolny z elementów odpowiadających czujnikowi na poprzednim widoku ukazuje się nam widok szczegółów (Rys. \ref{detail-view}) danego czujnika. Można tutaj odczytać
 bieżące pomiary wszystkich trzech typów, podstawowe statystyki odczytów z danego zakresu (wartości: aktualna, maksymalna, minimalna, średnia arytmetyczna), 
 podać zakres pomiarów do wyświetlenia oraz pobrać plik CSV zawierający dane z podanego zakresu.
 
 \begin{figure}[H]
     \includegraphics[width=\textwidth]{zdj/app/details.png}
     \caption{Zrzut ekranu przedstawiający widok szczegółów}
+    \label{detail-view}
 \end{figure}
 
-Wybór zakresu odbywa się poprzez wybranie dwóch dat - początkowej i końcowej - w lewej dolnej części widoku. Daty można wpisać ręcznie lub posłużyć się
+Wybór zakresu odbywa się poprzez wybranie dwóch dat - początkowej i końcowej - w lewej dolnej części widoku (Rys. \ref{pick-date}). Daty można wpisać ręcznie lub posłużyć się
 selektorem dat pojawiającym się po naciśnięciu w element. Aby wyświetlić dane z wybranego przedziału należy kliknąć w przycisk "Apply", po czym z serwera pobierane
-są odpowiednie dane i ładowane do widoku. W tym trybie nowe dane nie są pobierane z serwera. 
+są odpowiednie dane i ładowane do widoku. W związku z szerszym zakresem dat, z których pochodzą odczyty, dostosowuje się wyświetlany
+format czasu i daty, co widać na Rys. \ref{diff-time}.  W tym trybie nowe dane nie są pobierane z serwera na bieżąco. 
 Aby powrócić do domyślnej formy prezentowania odczytów (ładowanie danych na bieżąco) należy nacisnąć przycisk "Default". Bieżące oraz zaległe dane z odczytów
 zaczną znowu być ładowane do widoku.
 
@@ -39,6 +43,7 @@ zaczną znowu być ładowane do widoku.
     \centering
     \includegraphics[width=0.5\textwidth]{zdj/app/date-pick.png}
     \caption{Wybieranie daty}
+    \label{pick-date}
 \end{figure}
 
 \begin{figure}[H]
@@ -54,19 +59,21 @@ zaczną znowu być ładowane do widoku.
         \caption{Jednostki po wybraniu okresu z ostatniego tygodnia}
     \end{subfigure}
        
-    \caption{Schematy porównujące obie topologie sieci}
+    \caption{Wykresy przedstawiające dane z okresów o różnej długości}
+    \label{diff-time}
 \end{figure}
 W celu pobrania danych z wyznaczonego zakresu w postaci pliku CSV należy nacisnąć na przycisk "CSV". Otworzy to okienko pozwalające użytkownikowi wybranie folderu
-zapisu pliku oraz zmianę jego nazwy. 
+zapisu pliku oraz zmianę jego nazwy (Rys. \ref{csv-download}). 
 
 \begin{figure}[H]
     \centering
     \includegraphics[width=0.6\textwidth]{zdj/app/download-csv.png}
     \caption{Pobieranie danych na komputer użytkownika}
+    \label{csv-download}
 \end{figure}
 
 \subsection{Widok prezentacyjny}
-Aplikacja posiada również widok pozwalający na czytelne i estetyczne zaprezentowanie danych bliżej nie określonej grupie odbiorców, na przykład poprzez wyświetlenie
+Aplikacja posiada również widok (Rys. \ref{display-view}) pozwalający na czytelne i estetyczne zaprezentowanie danych bliżej nie określonej grupie odbiorców, na przykład poprzez wyświetlenie
 na telewizorze na korytarzu.
 Widok ten przedstawia odczyt z 4 czujników jednocześnie. Typ odczytu zmienia się cyklicznie co 20 sekund przedstawiając kolejno odczyty temperatury, wilgotności
 i dwutlenku węgla
@@ -75,6 +82,7 @@ i dwutlenku węgla
     \includegraphics[width=\textwidth]{zdj/app/presentation-view.png}
     \caption{Zrzut ekranu widoku prezentacyjnego. Równe wartości niektórych punktów pomiarowych spowodowane
     są wysoką częstotliwością pollingu}
+    \label{display-view}
 \end{figure}
 
 W górnej części każdego z czterech elementów można odczytać podstawowe informacje, takie jak sala w której czujnik aktualnie się znajduje, typ odczytu, podstawowe

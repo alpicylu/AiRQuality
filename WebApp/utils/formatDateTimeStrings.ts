@@ -1,26 +1,16 @@
 
 
 /* The purpose of this function is to format date strings to be displayed on charts
-ChartJS does have build in time-axis formatting, but i cant really get it to work 
-I Could do this with regex though.*/
+ChartJS DOES have build in time-axis formatting, but i cant really get it to work .*/
 
-/* Allow me to make some notes on how DateTime is handled in this program
+/*
 IQRF Cloud server is 1h ahead of Warsaw time
 UTC is 1h behind Warsaw time
 
 21:31   20:32   19:52
 IQRF    WRSW    UTC
 
-I download the IQRF time and save it in the database as new Date(time).toISOString().
-'time' is treated as if its the time of the local timezone (warsaw), so Date is gonna
-spit out a DT that is +1h ahead compared to UTC, but is still in UTC format.
-(find a way to set the +2 timezone on the DT from the server, so that its converted to UTC properly.)
-
-then the below formatting subtracts another hour for a total of -2h compared to whats on IQRF Cloud.
-
-REVISE THE ABOVE NOTES - MISSINFO
-
-Should i just work on epoch-timestamps?
+I need to remove 1h from IQRF-time before saving to DB in the ISO/UTC format
 */
 
 /*dates[] is an array of strings representing timedates in UTC format 

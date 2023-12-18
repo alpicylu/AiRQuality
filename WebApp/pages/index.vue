@@ -86,7 +86,7 @@ async function getFirstBatchSensorData(){
 
 async function pollServerForNewReadings(){
 
-    //here, i shall abuse the fact that The fulfillment value is an array of fulfillment values, 
+    //here, i shall abuse the fact that The fulfillment value is an array of fulfilled promises, 
     //in the order of the promises passed, regardless of completion order
     //The order of readings fetched here and the initial fetch from getFirstBatch... is coordinated by 2 things:
     //1. the iqrfIdSensorList array, which is populated in getFirstBatch and stays unchanged after that
@@ -97,8 +97,6 @@ async function pollServerForNewReadings(){
     await Promise.all(
         iqrfIdSensorList.value.map((iqrf) => {
             const sensorCurrentCursor = cursorToSensorMap.value.get(iqrf)
-            // console.log("map:", cursorToSensorMap)
-            // console.log("iqrf key and cursor", iqrf, sensorCurrentCursor)
             return useFetch(`/api/sensors/${iqrf}/readings?take=${nDataPointsOnChart.value}&order=asc&cursor=${sensorCurrentCursor}`)
         })
     ).then(res => {

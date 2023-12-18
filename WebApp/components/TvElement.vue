@@ -51,7 +51,7 @@ but cannot do the same with axis ranges. Wrapping the ref with all options in a 
 property to the chart element didnt help either. 
 But it seems that if i define the level-0 properties in computed() and then assign to deeper-level objects values
 from a ref, then it works. So if i need to dynamically change the color of the lines, for example, then
-i would have to create a property within the below ref and then reference it in computed(). Weird. But works.*/
+i would have to create a property within the below ref and then reference it in computed().*/
 const chartOptions = ref({
     animationDuration: 400,
     annotations: {},

@@ -2,7 +2,6 @@
     <div class="grid grid-cols-2 h-screen w-screen">
         <div v-for="i in numberOfSensors">
             <TvElement :sensorReadings="fetchedSensorData[i-1]" :readingToDisplay="readingToDisplay"/> <!--v-for starts with 1-->
-            <!-- <div class="bg-orange-500 border-cyan-700 border- w-full h-full"></div> -->
         </div>
     </div>
 
@@ -178,6 +177,7 @@ function ExitOnEscPress(event: KeyboardEvent){
         router.back()
     }
 }
+
 
 
 const displayTypeArr = [DisplayType.Temp, DisplayType.Rehu, DisplayType.CO2c]
