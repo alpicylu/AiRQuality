@@ -3,21 +3,21 @@ import { scheduleJob } from 'node-schedule'
 import { publicIpv4 } from 'public-ip'
 import * as crypto from 'node:crypto'
 import { stringify } from 'node:querystring'
-import { env } from 'node:process'
-import { apiKey, gid, uid } from "../API_key"
 import type { SensorDataType } from "../../types/types"
 import { PrismaClient } from '@prisma/client'
 import type { Sensor } from '@prisma/client'
 import {minServerSensorPollDelay} from '~/constants/constants'
+import {config} from 'dotenv' 
 
 const prisma = new PrismaClient()
+config()
 
 const FRONT_DEV_MODE = false
 
 var sensorList: Sensor[] //gets a list of all available sensors
-//This is not secure, i know it, but cloud.iqrf's SSL cert has expired. With the certificate being not valid.
-//the only option is to not verify their validity.
-env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
+
+// moved to .env
+// env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
 
 /*
 You need to fetch as many new records as available.
@@ -52,7 +52,8 @@ we send with the request. We take all of those and mash them through the md5 has
 //How to provide TS type definitions: https://stackoverflow.com/questions/45247991/is-there-a-way-to-add-type-definition-globally-in-typescript-2 
 //using an index signature to dynamically define object properties
 async function constructSignature(parameter_part: string): Promise<string> {
-    const api_key = apiKey
+    // const api_key = apiKey
+    const api_key = process.env.API_KEY
     const publicIPv4Address: string = await publicIpv4() //good
     const timestamp: string = Math.round( (Date.now()/1000)/600 ).toString() //Date.now returns ms, we need s
     const signatureString: string = `${parameter_part}|${api_key}|${publicIPv4Address}|${timestamp}`
@@ -65,8 +66,8 @@ async function constructURL(command: string, sensorIqrfId?: string): Promise<str
 
     var query: {[key: string]: any} = {}
     query.ver = 2,
-    query.uid = uid,
-    query.gid = gid,
+    query.uid = process.env.API_UID,
+    query.gid = process.env.API_GID,
     query.cmd = command    
 
     switch (command){

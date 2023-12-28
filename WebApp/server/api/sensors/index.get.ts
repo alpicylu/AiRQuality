@@ -4,6 +4,7 @@ const prisma = new PrismaClient()
 
 /*Returns a list of all sensors (id, room, iqrfid)*/
 export default defineEventHandler( async(event) => {
+    console.log("Request received")
     const queryParams = getQuery(event)
 
     let sensorID: string | undefined = undefined
