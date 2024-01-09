@@ -42,8 +42,10 @@ const displayValue = ref(displayOptions.value[0]);
 const sortValue = ref(sortOptions.value[0]);
 
 async function getFirstBatchSensorData(){
-    const sensors = await useFetch("/api/sensors")
-        .then(res => res.data.value?.sensors)
+    const sensors = await useFetch("/api/sensors", {
+        server: false
+    })
+    .then(res => res.data.value?.sensors)
 
     if (sensors === undefined || sensors === null)
         throw new Error("Error fetching a list of available sensors. Possibly, the fetch failed to get any data (fetched null)")

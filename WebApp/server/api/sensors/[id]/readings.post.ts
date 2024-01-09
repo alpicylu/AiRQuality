@@ -1,6 +1,6 @@
-import { PrismaClient } from '@prisma/client'
+import { PrismaClient, Prisma } from '@prisma/client'
 import type { Sensor } from '@prisma/client'
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
+// import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
 import type { SensorDataType } from '~/types/types'
 const prisma = new PrismaClient()
 
@@ -32,7 +32,7 @@ export default defineEventHandler( async (event) => {
     } catch (err) {
         setResponseStatus(event, 500)
         var prismaErrCode: string = "Unknown Error"
-        if (err instanceof PrismaClientKnownRequestError) prismaErrCode = err.code
+        if (err instanceof Prisma.PrismaClientKnownRequestError) prismaErrCode = err.code
         throw createError({
             statusCode: 500,
             statusMessage: `Prisma encountered an error while saving records to the database: ${prismaErrCode}`,

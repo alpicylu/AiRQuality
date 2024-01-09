@@ -1,10 +1,9 @@
-import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
-import { PrismaClient } from '@prisma/client'
+// import { PrismaClientKnownRequestError } from '@prisma/client/runtime/library'
+import { PrismaClient, Prisma } from '@prisma/client'
 const prisma = new PrismaClient()
 
 /*Returns a list of all sensors (id, room, iqrfid)*/
 export default defineEventHandler( async(event) => {
-    console.log("Request received")
     const queryParams = getQuery(event)
 
     let sensorID: string | undefined = undefined
@@ -27,7 +26,7 @@ export default defineEventHandler( async(event) => {
     } catch (err) {
         setResponseStatus(event, 500) //is there a point to this?
         var prismaErrCode: string = "Unknown Error"
-        if (err instanceof PrismaClientKnownRequestError) prismaErrCode = err.code
+        if (err instanceof Prisma.PrismaClientKnownRequestError) prismaErrCode = err.code
         throw createError({
             statusCode: 500,
             statusMessage: `Prisma encountered an error while saving records to the database: ${prismaErrCode}`,

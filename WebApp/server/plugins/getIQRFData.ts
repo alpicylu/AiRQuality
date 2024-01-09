@@ -9,15 +9,12 @@ import type { Sensor } from '@prisma/client'
 import {minServerSensorPollDelay} from '~/constants/constants'
 import {config} from 'dotenv' 
 
+
 const prisma = new PrismaClient()
 config()
 
 const FRONT_DEV_MODE = false
-
 var sensorList: Sensor[] //gets a list of all available sensors
-
-// moved to .env
-// env['NODE_TLS_REJECT_UNAUTHORIZED'] = '0'
 
 /*
 You need to fetch as many new records as available.

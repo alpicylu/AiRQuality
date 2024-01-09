@@ -10,8 +10,6 @@
 <script setup lang="ts">
 import type { SensorDataType, SingleSensorReadingsType } from '~/types/types';
 import { DisplayType } from "~/types/enums"
-import { PrismaClient } from '@prisma/client'
-const prisma = new PrismaClient()
 
 definePageMeta({
     layout: false
