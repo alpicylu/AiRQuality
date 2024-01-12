@@ -1,0 +1,36 @@
+version: '3'
+
+services:
+    mongo1:
+        image: mongo:7.0
+        hostname: mongo1
+        volumes:
+            - dbvolume:/data/db # assuming mongodb will store data under /data/db 
+        ports:
+            - 27017:27017
+        command: mongod --replSet "rs0" --bind_ip localhost,mongo1
+
+    web:
+        depends_on:
+            - mongo1
+            - mongoinit
+        build: .
+        ports:
+            - 3000:3000
+        env_file:
+            - .env
+
+    # this service is a bit redundant. Try to run this command from within mongo1
+    mongoinit: 
+        image: mongo:7.0
+        depends_on:
+            - mongo1 
+        restart: "no"
+        command: >
+            mongosh --host mongo1 --eval "rs.initiate({_id: 'rs0', members: [
+                    {_id: 0, host: 'mongo1'},
+                ]
+            })"
+
+volumes:
+    dbvolume:
