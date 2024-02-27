@@ -28,3 +28,6 @@ test.*
 
 #Latex
 /Thesis/latex_temp/
+
+#docker
+docker-compose.yaml
