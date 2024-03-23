@@ -24,7 +24,7 @@ onMounted(() => {
 const iqrfIdSensorList = ref<string[]>([])
 const fetchedSensorData = ref<SingleSensorReadingsType[]>([])
 const nDataPointsOnChart = ref<number>(24)
-//cursor can be undefined when the fetch succeeded, but the sensor simply hadnt returned any readings (empty arrays)
+//cursor can be undefined when the fetch succeeded but the sensor simply hadnt returned any readings (empty arrays)
 const cursorToSensorMap = ref(new Map())
 
 const displayOptions = ref([

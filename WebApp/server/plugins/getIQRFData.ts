@@ -181,8 +181,8 @@ function parseRawServerData(rawData: string): Array<SensorDataType | null> | nul
     var results: Array<SensorDataType | null> = []
     
     /*rawData is a string containing possibly many records. Every element in arr is one matched record.
-    Each element in one matched record is the exact string matched + matched groups.
-    For instance, arr[0][0] is the substring that contained the matched regex*/
+    one matched record is the exact string matched + matched groups (matched substring, INDEX, DATETIME, DATA).
+    For instance, arr[0][0] is the substring from rawData that contained the matched regex*/
     //           INDEX                 DATETIME               DATA
     const re1 = /(\d+);(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2});([A-F0-9]+);/g
     const arr = [...rawData.matchAll(re1)]
@@ -190,8 +190,9 @@ function parseRawServerData(rawData: string): Array<SensorDataType | null> | nul
     //el[2] - second (datetime) etc.
     arr.forEach((el, i, arr) => {
         var readings = parseSensorData(el[3])
-        //server is +1h compared to warsaw - need to subtract 1 to get local
+        //IQRF Cloud is 1h+ compared to warsaw (Warsaw 20:00 -> IQRFC 21:00)
         const localTimeOfReading = new Date(el[2])
+        // localTimeOfReading.setHours(localTimeOfReading.getHours() - 1 + localTimeOfReading.getTimezoneOffset()/60)
         localTimeOfReading.setHours(localTimeOfReading.getHours() - 1)
 
         if (readings !== null) readings.time = localTimeOfReading.toISOString() 
