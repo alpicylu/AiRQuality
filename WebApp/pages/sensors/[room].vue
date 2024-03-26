@@ -4,7 +4,9 @@
 
         <div class="basis-1/2 flex flex-col flex-auto justify-between gap-4 min-w-0">
 
-            <div class="basis-1/12 flex justify-center items-center text-3xl">{{ chartDataTRCReadings.room }}</div>
+            <div class="basis-1/12 flex justify-center items-center text-3xl">
+                {{ chartDataTRCReadings.room }} (ID: {{ chartDataTRCReadings.iqrfId }})
+            </div>
 
             <div class="basis-3/12 flex flex-initial justify-center items-center min-h-0">
                 <h1 class="w-2/12 break-all text-center">Temperature</h1>
@@ -73,6 +75,8 @@ ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScal
 
 import {formatDatesToHourMinute, formatDatesToHourDayMonth, formatDatesToDayMonth, formatDatesToDayMonthYear} from "~/utils/formatDateTimeStrings"
 import {msClientServerPollDelay} from "~/constants/constants"
+
+//(ID: {{ chartDataTRCReadings.iqrfId.replace(/([A-F0-9]{2})([A-F0-9]{2})/g, "$2$1") }})
 
 definePageMeta({
     middleware: [
@@ -329,6 +333,8 @@ async function pollServerForNewReadings(){
     batchCursor.value = readings.id[readings.id.length-1]
     console.log("New cursor:", batchCursor.value)
 
+    //Basically, if there are fewer points on the chart than N, then keep "adding" onto the chart
+    //but if the number of readings exceeds N, then remove k oldest records, where k is the number of new records
     chartDataTRCReadings.value.id = chartDataTRCReadings.value.id.concat(readings.id)
     chartDataTRCReadings.value.temp = chartDataTRCReadings.value.temp.concat(readings.temp)
     chartDataTRCReadings.value.rehu = chartDataTRCReadings.value.rehu.concat(readings.rehu)

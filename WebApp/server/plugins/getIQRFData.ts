@@ -191,6 +191,8 @@ function parseRawServerData(rawData: string): Array<SensorDataType | null> | nul
     arr.forEach((el, i, arr) => {
         var readings = parseSensorData(el[3])
         //IQRF Cloud is 1h+ compared to warsaw (Warsaw 20:00 -> IQRFC 21:00)
+        //Turns out, IQRFC's server is not ahead - its in Czechia which has the same TZ as Poland
+        //The sensors themselves are probably configured with their clock being +1h.
         const localTimeOfReading = new Date(el[2])
         // localTimeOfReading.setHours(localTimeOfReading.getHours() - 1 + localTimeOfReading.getTimezoneOffset()/60)
         localTimeOfReading.setHours(localTimeOfReading.getHours() - 1)

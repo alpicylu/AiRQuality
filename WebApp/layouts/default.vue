@@ -6,8 +6,8 @@
                 <div class="flex justify-evenly items-start mt-2">
                     <NuxtLink to="/">Home</NuxtLink>
                     <NuxtLink to="/displayTv">TV</NuxtLink>
-                    <NuxtLink>Log In</NuxtLink>
-                    <NuxtLink>About</NuxtLink>
+                    <NuxtLink class="opacity-50">Log In</NuxtLink>
+                    <NuxtLink class="opacity-50">About</NuxtLink>
                 </div>
                 </nav>
             </header>

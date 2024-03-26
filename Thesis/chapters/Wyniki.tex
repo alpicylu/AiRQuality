@@ -28,6 +28,13 @@ bardziej przystosowane do przechowywania danych występujących w stałych odcin
 W dalszym ciągu rozwoju aplikacji powinno się rozważyć wprowadzenie systemu uwierzytelniania. Aktualnie żadne podstrony ani ścieżki nie są chronione w taki sposób.
 Z drugiej strony natomiast aplikacja nie udostępnia żadnych wrażliwych danych oprócz tych zbieranych z czujników.
 
+\subsection{Obserwacje powstałe przy wdrażaniu}
+
+Z początku przypuszczano, że pojemność bazy danych wynosząca 512MB na aktualnym planie może okazać się niewystarczająca, natomiast przy średnim rozmiarze 
+pojedynczego pomiaru wynoszącym 75B oraz pobierając pomiary z 4 czujników co 5 min okazuje się, że miejsce w bazie skończy się w ciągu około 2300 dni
+($\approx$ 6 lat) od momentu uruchomienia pustej bazy danych. Nie mniej jednak w następnej fazie projektu dokona się próby ustawienia usuwania najstarszych
+rekordów w momencie bliskim przepełnieniu bazy.
+
 \subsection{Obserwacje}
 
 Dnia 13 grudnia 2023 w godzinach 10:00 - 22:00 zebrano dane o jakości powietrza w następujących salach budynku C2: 108, 110, 218 oraz 310. Odczyty pobierano

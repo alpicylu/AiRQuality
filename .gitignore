@@ -30,4 +30,4 @@ test.*
 /Thesis/latex_temp/
 
 #docker
-docker-compose.yaml
+docker-compose*.yaml

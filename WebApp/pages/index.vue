@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-initial flex-wrap justify-end items-center bg-ext-margins rounded-full w-10/12 my-10 px-10 py-2">
         <DropDownList name="Display" :options="displayOptions" v-model:selectedOption="displayValue"/>
-        <DropDownList name="Sort By" :options="sortOptions" v-model:selectedOption="sortValue"/>
+        <!-- <DropDownList name="Sort By" :options="sortOptions" v-model:selectedOption="sortValue"/> -->
     </div>
 
     <div class="flex flex-col flex-auto min-h-0 w-5/6 justify-start items-center">
