@@ -59,10 +59,11 @@ async function getFirstBatchSensorData(){
     let sensorReadingsObjectList: SingleSensorReadingsType[] = []
     await Promise.all(
         iqrfIdSensorList.value.map((iqrfid) => useFetch<SingleSensorReadingsType>(`/api/sensors/${iqrfid}/readings?take=${nDataPointsOnChart.value}&order=desc`))
-    ).then(res => {
+    ).then(res => { //res is an array of resolved promises
         res.forEach(el => { //each promise resolved with a value - iterate over those resolves
             const sensorData = el.data.value
-            if (sensorData == null) return //if a sensor's data is null, skip to the next iteration
+            if (sensorData == null) return //if a sensor's data is null, skip to the next iteration (next sensor)
+
             sensorReadingsObjectList.push(sensorData)
             cursorToSensorMap.value.set(sensorData.iqrfId, sensorData.id.at(0))
         })

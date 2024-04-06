@@ -31,9 +31,14 @@ Z drugiej strony natomiast aplikacja nie udostępnia żadnych wrażliwych danych
 \subsection{Obserwacje powstałe przy wdrażaniu}
 
 Z początku przypuszczano, że pojemność bazy danych wynosząca 512MB na aktualnym planie może okazać się niewystarczająca, natomiast przy średnim rozmiarze 
-pojedynczego pomiaru wynoszącym 75B oraz pobierając pomiary z 4 czujników co 5 min okazuje się, że miejsce w bazie skończy się w ciągu około 2300 dni
-($\approx$ 6 lat) od momentu uruchomienia pustej bazy danych. Nie mniej jednak w następnej fazie projektu dokona się próby ustawienia usuwania najstarszych
-rekordów w momencie bliskim przepełnieniu bazy.
+generowanych danych w ciągu dnia wynoszącym 57kB na czujnik oraz pobierając pomiary z 4 czujników co 5 min okazuje się, że miejsce w bazie skończy się w ciągu około 2000 dni
+(5-6 lat) od momentu uruchomienia pustej bazy danych. Niepewność wyniku pochodzi od potencjalnych awarii czujników, np. przez wyczerpanie baterii czy od 
+automatycznego tworzenia indeksów w bazie przez silnik, które również zajmują pewne miejsce. Nie mniej jednak, w następnej fazie 
+projektu dokona się próby ustawienia okresowego nadpisywania najstarszych rekordów z bazy.
+
+Należało by się również zastanowić, czy indeksy są niezbędne dla płynnego działania bazy danych. Są to struktury które m.in. usprawniają operacje odczytu i sortowania danych
+za cenę zajmowania dodatkowego miejsca na dysku i spowalniania operacji zapisu. Może się okazać, że warto jest spowolnić działanie aplikacji w celu zyskania potencjalnie 
+megabajtów dodatkowej przestrzeni dyskowej.
 
 \subsection{Obserwacje}
 

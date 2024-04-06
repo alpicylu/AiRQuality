@@ -8,12 +8,16 @@ import { PrismaClient } from '@prisma/client'
 import type { Sensor } from '@prisma/client'
 import {minServerSensorPollDelay} from '~/constants/constants'
 import {config} from 'dotenv' 
+import { DateTime } from 'luxon'
 
 
 const prisma = new PrismaClient()
 config()
 
-const FRONT_DEV_MODE = false
+const FRONT_DEV_MODE = false //setting this to true turns off the server (that is everything from polling to saving to DB)
+const SEND_READ_REQ_TO_SENSORS = false //Should the server issue an "uplc" request to the sensors?
+//setting this to false will only download readings from IQRFC
+
 var sensorList: Sensor[] //gets a list of all available sensors
 
 /*
@@ -99,28 +103,33 @@ async function pollSensors() {
     only OK/ERROR response */
     var atLeastOnePassed: boolean = false
     var failedRequests: Sensor[] = []
-    await Promise.all(
-        //returns an array of fetch promises
-        sensorList.map(async (sensor) => $fetch<string>(await constructURL("uplc", sensor.iqrfId), {retry: 3, retryDelay: 1000}))
-    )
-    .then((res) => { //res is an array of values resolved from all provided Promises.
-        if (res.length !== sensorList.length) throw new Error("More resolves were produced than there are sensors")
-        res.forEach((el, i, self) => {
-            atLeastOnePassed = atLeastOnePassed || (el === "OK;")
-            //res and sensorList are always of the same lenght, so its safe to do that
-            if (el !== "OK;") failedRequests.push(sensorList[i])
-        })
-        if (!atLeastOnePassed) throw new Error("IQRF cloud has not okay-ed any sensor data request - sensors have not been polled")
-        return
-    })
-    .catch((err) => { //this catch will spring if all promises rejected.
-        console.log(err)
-        return 
-    })
 
-    if (failedRequests.length > 0){
-        console.log("Some uplc requests failed:")
-        console.log(failedRequests)
+    //we are not asking sensors to read data, but we still want to fetch existing ones from IQRFC
+    if (!SEND_READ_REQ_TO_SENSORS) atLeastOnePassed = true
+    if (SEND_READ_REQ_TO_SENSORS) {
+        await Promise.all(
+            //returns an array of fetch promises
+            sensorList.map(async (sensor) => $fetch<string>(await constructURL("uplc", sensor.iqrfId), {retry: 3, retryDelay: 1000}))
+        )
+        .then((res) => { //res is an array of values resolved from all provided Promises.
+            if (res.length !== sensorList.length) throw new Error("More resolves were produced than there are sensors")
+            res.forEach((el, i, self) => {
+                atLeastOnePassed = atLeastOnePassed || (el === "OK;")
+                //res and sensorList are always of the same lenght, so its safe to do that
+                if (el !== "OK;") failedRequests.push(sensorList[i])
+            })
+            if (!atLeastOnePassed) throw new Error("IQRF cloud has not okay-ed any sensor data request - sensors have not been polled")
+            return
+        })
+        .catch((err) => { //this catch will spring if all promises rejected.
+            console.log(err)
+            return 
+        })
+
+        if (failedRequests.length > 0){
+            console.log("Some uplc requests failed:")
+            console.log(failedRequests)
+        }
     }
 
     /*If everything went smoothly during the last fetch, we are ready to get the acquired data from the cloud.
@@ -193,11 +202,15 @@ function parseRawServerData(rawData: string): Array<SensorDataType | null> | nul
         //IQRF Cloud is 1h+ compared to warsaw (Warsaw 20:00 -> IQRFC 21:00)
         //Turns out, IQRFC's server is not ahead - its in Czechia which has the same TZ as Poland
         //The sensors themselves are probably configured with their clock being +1h.
-        const localTimeOfReading = new Date(el[2])
-        // localTimeOfReading.setHours(localTimeOfReading.getHours() - 1 + localTimeOfReading.getTimezoneOffset()/60)
-        localTimeOfReading.setHours(localTimeOfReading.getHours() - 1)
+        // const localTimeOfReading = new Date(el[2])
+        // localTimeOfReading.setHours(localTimeOfReading.getHours() - 1)
 
-        if (readings !== null) readings.time = localTimeOfReading.toISOString() 
+        const trueLocalReadingTime = DateTime.fromFormat(el[2], "yyyy-MM-dd HH:mm:ss", {zone: "Europe/Warsaw"}).minus({hours: 1})
+        // Subtract 1h because all sensor readings are +1h compared to Poland/Warsaw    
+        const readingTimeUTC = trueLocalReadingTime.toUTC()
+
+        //DateTime of sensor readings is saved in UTC time according to ISO format (eg. 2024-04-05T09:00:00.000Z)
+        if (readings !== null && readingTimeUTC.isValid) readings.time = readingTimeUTC.toISO() 
         results.push(readings)
     })
     return results

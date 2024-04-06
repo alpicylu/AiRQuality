@@ -28,7 +28,7 @@ nad uruchomieniem serwera jako 'zwykły' proces, natomiast rozwiązanie to wielo
 paczek wykorzystywanych przez serwer. Zmniejszało to już i tak niską pojemność dysku oraz wprowadzało pewne konflikty między bibliotekami Node a systemem, których
 nie udało się naprawić.
 
-Dockeryzacja eliminuje wszystkie powyższe problemy, dodatkowo zapewniając przenośność serwera na inny system(komputer), który pracuje w tej samej architekturze co RPI.
+Dockeryzacja eliminuje wszystkie powyższe problemy, dodatkowo zapewniając przenośność serwera na inny system (komputer), który pracuje w tej samej architekturze co RPI.
 
 Proces ten polega na tworzeniu 'obrazów' - swoistych szkiców, rusztowań aplikacji. Komputer wyposażony w silnik Dockera oraz posiadający obraz aplikacji jest w stanie 
 utworzyć 'kontener' na podstawie tego obrazu. Kontener jest procesem bądź aplikacją uruchomioną wewnątrz środowiska Dockera, który z kolei może zostać uzewnętrzniony do 
@@ -112,7 +112,7 @@ skrypt uruchamiający serwer krótki czas po włączeniu RPI:
     sudo docker run -p 3000:3000 -d webapp-web
 \end{lstlisting}
 
-\lstinline|sleep 30| ma na celu wymuszenie poczekania, aż system całkowicie się załaduje. Rozważano obserwacje statusu aktywności silnika Dockera 
+\lstinline|sleep 30| ma na celu poczekanie, aż system całkowicie się załaduje. Rozważano obserwacje statusu aktywności silnika Dockera 
 jako wskaźnika gotowości systemu, natomiast podjęto decyzję, że to rozwiązanie było by zbyt skomplikowane niż aplikacja tego wymaga.
 Druga linijka uruchamia serwer w trybie 'bezgłowym', niegenerującym wyjścia na terminalu oraz uzewnętrznia wewnętrzny port Dockera
 do komputera, który ten silnik hostuje. Dzięki temu komputery z sieci lokalnej po wpisaniu adresu RPI oraz portu, na którym działa serwer są 

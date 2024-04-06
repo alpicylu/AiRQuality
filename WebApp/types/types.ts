@@ -1,6 +1,6 @@
 //TODO 4 consider making Single... a class (with methods like avg, min, max etc.)
 
-//What you get from 1 sensor after asking it about the weather + time
+//What you get from 1 sensor after asking it about the weather + time. This is a single datapoint a sensor represents
 export interface SensorDataType {
     time: string,
     temp: number,
