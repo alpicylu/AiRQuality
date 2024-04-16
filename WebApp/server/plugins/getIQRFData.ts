@@ -14,7 +14,7 @@ import { DateTime } from 'luxon'
 const prisma = new PrismaClient()
 config()
 
-const FRONT_DEV_MODE = false //setting this to true turns off the server (that is everything from polling to saving to DB)
+const FRONT_DEV_MODE = true //setting this to true turns off the server (that is everything from polling to saving to DB)
 const SEND_READ_REQ_TO_SENSORS = false //Should the server issue an "uplc" request to the sensors?
 //setting this to false will only download readings from IQRFC
 

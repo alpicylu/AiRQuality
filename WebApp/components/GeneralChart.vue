@@ -1,4 +1,24 @@
 <template>
+    <NuxtLink id="room" :to="linkableRoomName" class="flex flex-1 grow-[1] justify-center items-center text-4xl"> {{ sensorData?.room }} </NuxtLink>
+    <div id="chart" class="flex-1 grow-[7] relative overflow-hidden">
+        <Line id="chart" :options="chartReactiveOptions" :data="chartReactiveData" :plugins="[backgroundColorPlugin]"/>
+    </div>
+    <form id="grid" class="flex-1 grow-[4] grid gap-2 justify-items-center items-center">
+        <input type="radio" :id="sensorData?.room + 'T'" :value=DisplayType.Temp :name="sensorData?.room" v-model="valueOfRadioGroup" :checked=tempCheck>
+        <label :for="sensorData?.room + 'T'">T</label>
+        <div > {{ tempDisplayable }} &#8451; </div>
+
+        <input type="radio" :id="sensorData?.room + 'R'" :value=DisplayType.Rehu :name="sensorData?.room" v-model="valueOfRadioGroup" :checked="rehuCheck">
+        <label :for="sensorData?.room + 'R'">RH</label>
+        <div > {{ sensorData?.rehu.at(-1) }} % </div>
+
+        <input type="radio" :id="sensorData?.room + 'C'" :value=DisplayType.CO2c :name="sensorData?.room" v-model="valueOfRadioGroup" :checked="co2cCheck">
+        <label :for="sensorData?.room + 'C'">CO2</label>
+        <div > {{ sensorData?.co2c.at(-1) }} ppm </div>
+    </form>
+</template>
+
+<!-- <template>
     <div class="h-64 grid grid-cols-6 my-8">
         <NuxtLink :to="linkableRoomName" class="row-span-6 col-span-1 bg-ext-content flex justify-start items-center text-5xl"> {{ sensorData?.room }} </NuxtLink>
         <div class="relative h-full w-full col-start-2 row-span-6 col-span-3">
@@ -19,7 +39,7 @@
         </form>
     </div>
     <div class="bg-ext-margins h-1 rounded-full w-full mx-auto"></div>
-</template>
+</template> -->
 
 <script setup lang="ts">
 import { Line } from 'vue-chartjs'
@@ -35,14 +55,15 @@ const props = defineProps<{
     sensorData?: SingleSensorReadingsType
 }>()
 
+onMounted(() => {
+    tempCheck.value = true
+})
+
 const valueOfRadioGroup = ref<DisplayType>(props.checkAllRadios)
 
 const linkableRoomName = computed(() => `/sensors/${props.sensorData?.room.replace(/\s/g, "_")}`)
 
 const tempCheck = ref(false)
-onMounted(() => {
-    tempCheck.value = true
-})
 const rehuCheck = ref(false)
 const co2cCheck = ref(false)
 
@@ -116,6 +137,10 @@ function displayReadingBasedOnRadio(){
     }
 }
 
+//Change layout once window width is at most 750px (same condition as the media query)
+
+/*Just make a media query in the layout .vue file */
+
 watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
     switch (newCheck){
         case DisplayType.Temp:
@@ -149,4 +174,82 @@ watch(() => props.sensorData, (newData, oldData) => {
 }, {deep: true})
 
 
+
 </script>
+
+<style>
+
+input {
+    width: 3rem;
+    height: 3rem;
+}
+
+#grid {
+    grid-template-areas: 
+        'radioT   labelT   readingT'
+        'radioRH  labelRH  readingRH'
+        'radioCO2 labelCO2 readingCO2';
+}
+
+#grid>input:nth-of-type(1){
+    grid-area: radioT;
+}
+
+#grid>label:nth-of-type(1){
+    grid-area: labelT;
+}
+
+#grid>div:nth-of-type(1){
+    grid-area: readingT;
+}
+
+#grid>input:nth-of-type(2){
+    grid-area: radioRH;
+}
+
+#grid>label:nth-of-type(2){
+    grid-area: labelRH;
+}
+
+#grid>div:nth-of-type(2){
+    grid-area: readingRH;
+}
+
+#grid>input:nth-of-type(3){
+    grid-area: radioCO2;
+}
+
+#grid>label:nth-of-type(3){
+    grid-area: labelCO2;
+}
+
+#grid>div:nth-of-type(3){
+    grid-area: readingCO2;
+}
+
+@media (max-width: 750px){
+    #chart {
+        flex: 1 1 500px;
+        height: 12rem;
+    }
+    #room {
+        flex: 1 1 500px;
+        font-size: 1.25rem/* 24px */;
+        line-height: 0.25rem/* 32px */;
+    }
+    #grid {
+        flex: 1 1 500px;
+        grid-template-areas:  
+            'radioT labelT radioRH labelRH radioCO2 labelCO2'
+            'readingT readingT readingRH readingRH readingCO2 readingCO2';
+        font-size: 1rem/* 24px */;
+        line-height: 1.5rem/* 32px */;
+        min-width: 0;
+    }
+    input {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+}
+
+</style>

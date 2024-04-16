@@ -1,10 +1,10 @@
 <template>
-    <form class="flex flex-1 flex-wrap w-4/12 justify-end">
+    <form class="flex flex-1 flex-wrap w-4/12 justify-center">
         <label :for="name" class="whitespace-nowrap text-xl text-gray-600 mr-2">{{ name }}:</label>
         <select :name="name.toLowerCase()" :id="name" :value="selectedOption"
             @input="$emit('update:selectedOption', ($event.target as HTMLSelectElement).value)"
-            class="px-5 rounded-full text-base">
-            <option v-for="(opt, index) in options"
+            class="flex px-5 rounded-full text-base">
+            <option class="text-wrap" v-for="(opt, index) in options"
                 :key="opt"
                 :value="opt">{{ opt }}
             </option>

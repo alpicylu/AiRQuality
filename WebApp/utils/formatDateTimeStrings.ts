@@ -18,23 +18,6 @@ export function formatDatesToHourMinute(dates: string[]){
     return formattedDates
 }
 
-// export function formatDatesToHourDayMonth(dates: string[]){
-//     let formattedDates: string[] = []
-//     dates.forEach(el => {
-//         const dateObj = new Date(el)
-//         let hours: number = dateObj.getHours()
-
-//         let day: number|string = dateObj.getDate()
-//         if (day < 10) day = `0${day.toString()}`
-
-//         let month: number|string = dateObj.getMonth() + 1
-//         if (month < 10) month = `0${month.toString()}`
-
-//         formattedDates.push(`${hours}h ${day}.${month}`)
-//     })
-//     return formattedDates
-// }
-
 export function formatDatesToHourDayMonth(dates: string[]){
     let formattedDates: string[] = []
     dates.forEach(el => {
@@ -45,21 +28,6 @@ export function formatDatesToHourDayMonth(dates: string[]){
     return formattedDates
 }
 
-// export function formatDatesToDayMonth(dates: string[]){
-//     let formattedDates: string[] = []
-//     dates.forEach(el => {
-//         const dateObj = new Date(el)
-//         let day: number|string = dateObj.getDate()
-//         if (day < 10) day = `0${day.toString()}`
-
-//         let month: number|string = dateObj.getMonth() + 1
-//         if (month < 10) month = `0${month.toString()}`
-
-//         formattedDates.push(`${day}.${month}`)
-//     })
-//     return formattedDates
-
-// }
 export function formatDatesToDayMonth(dates: string[]){
     let formattedDates: string[] = []
     dates.forEach(el => {
@@ -69,23 +37,6 @@ export function formatDatesToDayMonth(dates: string[]){
     })
     return formattedDates
 }
-
-// export function formatDatesToDayMonthYear(dates: string[]){
-//     let formattedDates: string[] = []
-//     dates.forEach(el => {
-//         const dateObj = new Date(el)
-//         let day: number|string = dateObj.getDate()
-//         if (day < 10) day = `0${day.toString()}`
-
-//         let month: number|string = dateObj.getMonth() + 1
-//         if (month < 10) month = `0${month.toString()}`
-
-//         let year: number = dateObj.getFullYear()
-
-//         formattedDates.push(`${day}.${month}.${year.toString().slice(2)}`)
-//     })
-//     return formattedDates
-// }
 
 export function formatDatesToDayMonthYear(dates: string[]){
     let formattedDates: string[] = []
