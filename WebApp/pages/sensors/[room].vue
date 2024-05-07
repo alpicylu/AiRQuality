@@ -1,67 +1,55 @@
 <template>
 
-    <div class="flex flex-initial h-full w-full mt-5">
+    <div id="large" class="flex-1 flex flex-col gap-4 mb-4 justify-around items-stretch w-full">
 
-        <div class="basis-1/2 flex flex-col flex-auto justify-between gap-4 min-w-0">
-
-            <div class="basis-1/12 flex justify-center items-center text-3xl">
-                {{ chartDataTRCReadings.room }} (ID: {{ chartDataTRCReadings.iqrfId }})
+        <div class="flex-initial grid grid-cols-9 grid-rows-1">
+            <div class="row-start-1 col-start-2 row-span-1 col-span-4 flex justify-center items-center">
+                <h1>C2 108</h1>
             </div>
-
-            <div class="basis-3/12 flex flex-initial justify-center items-center min-h-0">
-                <h1 class="w-2/12 break-all text-center">Temperature</h1>
-                <div class="w-10/12 h-full"><Line :data="tempChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginTempChart]"/></div>
+            <div class="row-start-1 col-start-6 row-span-1 col-span-4 flex justify-around items-center basis-1/2 ">
+                <h2>Now</h2>
+                <h2>Max</h2>
+                <h2>Min</h2>
+                <h2>Avg</h2>
             </div>
-
-            <div class="basis-3/12 flex flex-initial justify-center items-center min-h-0">
-                <h1 class="w-2/12 break-all text-center">Rel. humidity</h1>
-                <div class="w-10/12 h-full"><Line :data="rehuChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginRehuChart]"/></div>
-            </div>
-
-            <div class="basis-3/12 flex flex-initial justify-center items-center min-h-0">
-                <h1 class="w-2/12 break-all text-center">CO2 content</h1>
-                <div class="w-10/12 h-full"><Line :data="co2cChartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPluginCo2cChart]"/></div>
-            </div>
-
-
-            <div class="basis-1/12 flex justify-evenly items-center">
-                <DatePicker v-model:pickerDate="dateA"/>
-                <DatePicker v-model:pickerDate="dateB"/>
-                <button @click="getReadingsFromDateToDate" class="rounded-full bg-ext-margins p-3">Apply</button>
-                <button @click="getFirstBatchSensorData" class="rounded-full bg-ext-margins p-3">Default</button>
-            </div>
-
         </div>
 
-        <div class="basis-1/2 flex flex-col flex-auto justify-between gap-4">
+        <DetailViewLargeChartStat class="flex-auto min-h-32" :data="chartDataTRCReadings.temp" :times="chartTime" :readingType="DisplayType.Temp" />
+        <DetailViewLargeChartStat class="flex-auto min-h-32" :data="chartDataTRCReadings.rehu" :times="chartTime" :readingType="DisplayType.Rehu" />
+        <DetailViewLargeChartStat class="flex-auto min-h-32" :data="chartDataTRCReadings.co2c" :times="chartTime" :readingType="DisplayType.CO2c" />
 
-            <div class="basis-1/12 flex justify-around items-center">
-                <h1 class="text-2xl">NOW</h1>
-                <h1 class="text-2xl">MAX</h1>
-                <h1 class="text-2xl">MIN</h1>
-                <h1 class="text-2xl">AVG</h1>
-                <h1 class="text-2xl">UNIT</h1>
-            </div>
-
-
-            <div class="basis-3/12 flex justify-around items-center">
-                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.temp" :readingType="DisplayType.Temp"/>
-            </div>
-
-            <div class="basis-3/12 flex justify-around items-center">
-                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.rehu" :readingType="DisplayType.Rehu"/>
-            </div>
-
-            <div class="basis-3/12 flex justify-around items-center">
-                <DetailViewTableRow :sensorReadings="chartDataTRCReadings.co2c" :readingType="DisplayType.CO2c"/>
-            </div>
-
-
-            <div class="basis-1/12 flex justify-center items-center">
-                <button @click="buttonTestFunction" class="bg-ext-margins rounded-full p-3">CSV</button>
-            </div>
-
+        <div class="flex flex-initial justify-evenly items-center">
+            <DatePicker v-model:pickerDate="dateA"/>
+            <DatePicker v-model:pickerDate="dateB"/>
+            <button @click="getReadingsFromDateToDate" class="rounded-full bg-ext-margins p-3">Apply</button>
+            <button @click="getFirstBatchSensorData" class="rounded-full bg-ext-margins p-3">Default</button>
+            <button @click="buttonTestFunction" class="bg-ext-margins rounded-full p-3">CSV</button>
         </div>
+
+    </div>
+
+    <!-- Phone layout -->
+
+    <div id="small" class="hidden flex-col w-full h-full px-4 gap-4">
+
+        <h1 class="basis-1/12 flex justify-center items-center mt-4">{{ chartDataTRCReadings.room }} (ID: {{ chartDataTRCReadings.iqrfId }})</h1>
+
+        <div class="basis-10/12 flex flex-col justify-around gap-2">
+            <DetailViewSmallChartStat :data="chartDataTRCReadings.temp" :times="chartTime" :readingType="DisplayType.Temp" />
+            <DetailViewSmallChartStat :data="chartDataTRCReadings.rehu" :times="chartTime" :readingType="DisplayType.Rehu" />
+            <DetailViewSmallChartStat :data="chartDataTRCReadings.co2c" :times="chartTime" :readingType="DisplayType.CO2c" />
+        </div>
+
+        <div class="basis-1/12 flex justify-around items-center sticky bottom-0 bg-ext-content py-4">
+            <div class="flex justify-around bg-ext-margins rounded-full grow-[3]">
+                <button><CalendarOutline class="h-8"/></button>
+                <button><CalendarSolid class="h-8"/></button>
+                <button><CheckIcon class="h-8"/></button>
+            </div>
+            <button class="grow-[1]"><ArrowPathIcon class="h-8 mx-auto"/></button>
+            <button class="grow-[1]"><ArrowDownTrayIcon class="h-8 mx-auto"/></button>
+        </div>
+        
     </div>
 
 </template>
@@ -76,7 +64,8 @@ ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScal
 import {formatDatesToHourMinute, formatDatesToHourDayMonth, formatDatesToDayMonth, formatDatesToDayMonthYear} from "~/utils/formatDateTimeStrings"
 import {msClientServerPollDelay} from "~/constants/constants"
 
-//(ID: {{ chartDataTRCReadings.iqrfId.replace(/([A-F0-9]{2})([A-F0-9]{2})/g, "$2$1") }})
+import { CalendarDaysIcon as CalendarOutline, CheckIcon, ArrowPathIcon, ArrowDownTrayIcon } from "@heroicons/vue/24/outline"
+import { CalendarDaysIcon as CalendarSolid } from "@heroicons/vue/24/solid"
 
 definePageMeta({
     middleware: [
@@ -418,24 +407,6 @@ async function getReadingsFromDateToDate() {
     }
 }
 
-// async function checkIfCurrentRoomExists(to: string, from: string){
-//     const route = useRoute()
-//     const sensors = await useFetch(`/api/sensors`)
-//     .then(res => {
-//         return res.data.value?.sensors
-//     })
-//     .catch(console.error)
-
-//     let exists = false
-//     sensors?.forEach(el => {
-//         el.name.replace(/\s/g, '_')
-//         if (el.name === route.params.room) exists = true
-//     })
-
-//     console.log("in function:", exists)
-//     return exists
-// }
-
 watch(() => chartDataTRCReadings.value, (newReadings, oldReadings) => {
     tempChartBgColorUpdate(newReadings.temp.at(-1), DisplayType.Temp)
     rehuChartBgColorUpdate(newReadings.rehu.at(-1), DisplayType.Rehu)
@@ -448,8 +419,6 @@ var pollServerInterval: null|NodeJS.Timeout = setInterval(() => {
 }, msClientServerPollDelay)
 
 
-
-
 /* https://stackoverflow.com/questions/2809688/directory-chooser-in-html-page */
 
 </script>
@@ -457,18 +426,18 @@ var pollServerInterval: null|NodeJS.Timeout = setInterval(() => {
 
 <style>
 
-    td, th {
-        text-align: center; 
-        vertical-align: middle;
+    #large {
+        font-size: clamp(1.25rem, 2vw, 2rem)
     }
 
-    tr>td {
-        border-right: solid gray;
-    }
-
-    tr>td:last-of-type {
-        border-style: none;
-        border-width: 0;
+    @media (max-width: 750px){
+        #small {
+            display: flex;
+            font-size: clamp(1rem, 4vw, 1.25rem);
+        }
+        #large {
+            display: none;
+        }
     }
 
 </style>

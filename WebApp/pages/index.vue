@@ -1,12 +1,12 @@
 <template>
-    <div class="flex flex-initial flex-wrap justify-end items-center bg-ext-margins rounded-full w-10/12 my-10 px-10 py-2">
-        <DropDownList is="drop-display" name="Display" :options="displayOptions" v-model:selectedOption="displayValue"/>
-        <!-- <DropDownList name="Sort By" :options="sortOptions" v-model:selectedOption="sortValue"/> -->
-    </div>
-
-    <div class="flex flex-col flex-auto min-h-0 w-5/6 justify-start items-center">
-        <ul class="flex flex-col overflow-y-auto overflow-hidden h-fit w-full">
-            <li class="flex flex-row flex-wrap gap-4 my-4 flex-none basis-64 text-2xl" v-for="i in iqrfIdSensorList.length" :key="i" > 
+    <div class="flex flex-col h-full items-center">
+        <div class="bg-white w-5/6 sticky top-0">
+            <div class="flex flex-initial flex-wrap justify-end items-center bg-ext-margins rounded-full w-full my-5 px-10 py-2">
+                <DropDownList is="drop-display" name="Display" :options="displayOptions" v-model:selectedOption="displayValue"/>
+            </div>
+        </div>
+        <ul class="flex flex-col w-5/6">
+            <li v-for="i in iqrfIdSensorList.length" :key="i" > 
                 <GeneralChart :checkAllRadios="displayValue" :sensorData="fetchedSensorData[i-1]" /> 
             </li>
         </ul>

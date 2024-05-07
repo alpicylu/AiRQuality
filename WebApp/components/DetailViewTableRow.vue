@@ -9,9 +9,12 @@
 </template>
 
 <script setup lang="ts">
+/*This component is currently unused */
+
 import { DisplayType } from '~/types/enums';
 
-onMounted
+//What is this for?
+// onMounted
 
 const props = defineProps<{
     sensorReadings?: number[]
