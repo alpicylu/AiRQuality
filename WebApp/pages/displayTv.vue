@@ -1,15 +1,13 @@
 <template>
-    <div class="grid grid-cols-2 h-screen w-screen">
-        <div v-for="i in numberOfSensors">
-            <TvElement :sensorReadings="fetchedSensorData[i-1]" :readingToDisplay="readingToDisplay"/> <!--v-for starts with 1-->
-        </div>
+    <div class="h-screen w-screen grid grid-cols-2">
+        <TvElement v-for="i in numberOfSensors" :sensorReadings="fetchedSensorData[i-1]" :readingToDisplay="readingToDisplay"/> <!--v-for starts with 1-->
     </div>
-
 </template>
 
 <script setup lang="ts">
 import type { SensorDataType, SingleSensorReadingsType } from '~/types/types';
 import { DisplayType } from "~/types/enums"
+import {msClientServerPollDelay} from "~/constants/constants"
 
 definePageMeta({
     layout: false
@@ -40,11 +38,16 @@ const cursorToSensorMap = ref(new Map())
 
 
 //Make this a composable (shared logic with index.vue)
+//1. Get info on all available sensors from the DB
+//2. Push their iqrfID into a list of strings
+//3. For every sensor in this list, get its readings data from the db, put them into another list and set cursor
+//4. Reverse this readings list to make readings chronological
+//5. Set the value of the array from which charts read their data to this now-chronological readings array
 async function getFirstBatchSensorData(){
     const {data} = await useFetch("/api/sensors")
 
     if (data.value?.sensors === undefined)
-        throw new Error("Error fetching a list of available sensors. Possibly, the fetch failed to get any data (fetched null)")
+        throw new Error("Error fetching a list of available sensors. Possibly, the fetch failed to get any data (may fetched null)")
 
     //get a list of registered sensors from the DB
     // let iqrfIdSensorList: string[] = []
@@ -83,12 +86,6 @@ async function getFirstBatchSensorData(){
 
 //subsequent fetches will ideally only get only a single, freshest record from the DB.
 async function getSmallReadingBatch(){
-    //first, get the cursor - ID of the most recent fetched reading.
-    //you need to get the last ID for every element in fetchedSensorData
-
-    // for (let sensor of fetchedSensorData.value){
-    //     pushFakeSensorReadings(sensor)
-    // }
 
     let newReadings: (SingleSensorReadingsType|null)[] = []
     await Promise.all(
@@ -176,8 +173,6 @@ function ExitOnEscPress(event: KeyboardEvent){
     }
 }
 
-
-
 const displayTypeArr = [DisplayType.Temp, DisplayType.Rehu, DisplayType.CO2c]
 const changeReadingToDisplayInterval = setInterval(() => {
     readingToDisplay.value = displayTypeArr[ (displayTypeArr.indexOf(readingToDisplay.value) + 1) % 3 ]
@@ -185,7 +180,7 @@ const changeReadingToDisplayInterval = setInterval(() => {
 
 const x = setInterval(() => {
     getSmallReadingBatch()
-}, 1000*2)
+}, msClientServerPollDelay)
 
 
 </script>

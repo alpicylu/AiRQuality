@@ -1,23 +1,26 @@
 <template>
-    <div class=" w-full h-full">
+    <div class="w-full h-full bg-black">
 
-        <div class="flex flex-row justify-evenly items-center h-1/6 w-full text-white bg-black text-5xl">
-            <div>{{ props.sensorReadings?.room }}</div>
+        <div id="belt" class="flex justify-evenly items-center h-1/6 w-full text-white bg-black">
+            <div class="leading-none w-min">{{ props.sensorReadings?.room }}</div> 
             <div>{{ readingToDisplayTypeAbbrev.abbrev }}</div>
-            <div class="grid grid-cols-12 text-base h-full">
-                <div class="col-span-1 text-3xl text-vert">NOW</div>
-                <div class="col-span-3 text-5xl flex justify-center items-center">{{ currentDisplayValue }}</div>
-
-                <div class="col-span-1 text-3xl text-vert">MIN</div>
-                <div class="col-span-3 text-5xl flex justify-center items-center">{{ Math.round(Math.min(...chartData)) }}</div>
-
-                <div class="col-span-1 text-3xl text-vert">MAX</div>
-                <div class="col-span-3 text-5xl flex justify-center items-center">{{ Math.round(Math.max(...chartData)) }}</div>
+            <div class="flex flex-col">
+                <div class="flex-1 grow-[1] reading-type">NOW</div>
+                <div class="flex-1 grow-[2]">{{ currentDisplayValue }}</div>
+            </div>
+            <div class="flex flex-col">
+                <div class="flex-1 grow-[1] reading-type">MIN</div>
+                <div class="flex-1 grow-[2]">{{ Math.round(Math.min(...chartData)) }}</div>
+            </div>
+            <div class="flex flex-col">
+                <div class="flex-1 grow-[1] reading-type">MAX</div>
+                <div class="flex-1 grow-[2]">{{ Math.round(Math.max(...chartData)) }}</div>
             </div>
             <div>{{ readingToDisplayTypeAbbrev.unit }}</div>
         </div>
-        <div class="border-black border-x-2 h-5/6 w-full">
-            <Line :data="chartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPlugin]"/>
+
+        <div class="border-x-2 border-black h-5/6 w-full relative">
+            <Line class="absolute top-0 left-0 right-0 bottom-0" :data="chartReactiveData" :options="chartReactiveOptions" :plugins="[backgroundColorPlugin]"/>
         </div>
 
     </div>
@@ -70,9 +73,9 @@ const chartReactiveOptions = computed(() => {
                 backgroundColor: "#000000"
             }
         },
-        scale:{ //apply to both scales
+        scale:{ //apply to both scales. https://stackoverflow.com/questions/1248081/how-to-get-the-browser-viewport-dimensions
             font: {
-                size: 16
+                size: () => Math.min(window.innerHeight * 0.03, 16)
             }
         },
         scales: {
@@ -90,6 +93,7 @@ const chartReactiveOptions = computed(() => {
         }
     }
 })
+
 
 //this one is directly passed to the line chart element
 const chartReactiveData = computed(() => {
@@ -139,11 +143,12 @@ const currentDisplayValue = computed(() => {
 })
 
 //This function will be called both when new data is available to display
-//and when the type of data to display changes.
+//and when the type of data to display changes, the latter occurring every 10sec.
+//it swaps the contents of the array that the chart uses to display data points.
 //This might not be too efficient, since when just 1 new record gets pushed to the sensorReadings array
 //the entire chartData array gets overwritten
 //On the flipside, one function does 2 things and its not called all too often
-//so performance loss is negligible  
+//so performance loss is negligible (i hope)
 function choseSensorReadingToDisplay(allSensorReadings: SingleSensorReadingsType) {
     switch (props.readingToDisplay){
         case DisplayType.Temp:
@@ -161,108 +166,43 @@ function choseSensorReadingToDisplay(allSensorReadings: SingleSensorReadingsType
 }
 
 //https://www.chartjs.org/chartjs-plugin-annotation/latest/
+
 function drawLinesBasedOnReadingType(type: DisplayType){
-    //Find a way to do this on a loop
+
+    const generateLineObjectsBasedOnLineHeights = (heights: number[]) => {
+        var res: {[key: string] : any} = {}
+        heights.forEach( (el, i) => {
+            res[`line${i}`] = {
+                type: 'line',
+                yMin: el,
+                yMax: el,
+                borderColor: 'rgb(90, 90, 90)',
+                borderWidth: 2,
+                z: 10
+            }
+        })
+        return res
+    }
+
+    var lineHeights: number[]
     switch (type){
-        case DisplayType.Temp:
-            chartOptions.value.annotations = {
-                line1: {
-                    type: 'line',
-                    yMin: 14,
-                    yMax: 14,
-                    borderColor: 'rgb(90, 90, 90)',
-                    borderWidth: 2,
-                    z: 10
-                },
-                line2: {
-                    type: 'line',
-                    yMin: 18,
-                    yMax: 18,
-                    borderColor: 'rgb(90, 90, 90)',
-                    borderWidth: 2,
-                    z: 10
-                },
-                line3: {
-                    type: 'line',
-                    yMin: 22,
-                    yMax: 22,
-                    borderColor: 'rgb(90, 90, 90)',
-                    borderWidth: 2,
-                    z: 10
-                },
-                line4: {
-                    type: 'line',
-                    yMin: 26,
-                    yMax: 26,
-                    borderColor: 'rgb(90, 90, 90)',
-                    borderWidth: 2,
-                    z: 10
-                }
-            }
+        case DisplayType.Temp: //14, 18, 22, 26
+            lineHeights = [14, 18, 22, 26]
+            chartOptions.value.annotations = generateLineObjectsBasedOnLineHeights(lineHeights)
             break
-        case DisplayType.Rehu:
-            chartOptions.value.annotations = {
-                line1: {
-                    type: 'line',
-                    yMin: 20,
-                    yMax: 20,
-                    borderColor: 'rgb(90, 90, 90)',
-                    borderWidth: 2,
-                    z: 10
-                },
-                line2: {
-                    type: 'line',
-                    yMin: 30,
-                    yMax: 30,
-                    borderColor: 'rgb(90, 90, 90)',
-                    borderWidth: 2,
-                    z: 10
-                },
-                line3: {
-                    type: 'line',
-                    yMin: 50,
-                    yMax: 50,
-                    borderColor: 'rgb(90, 90, 90)',
-                    borderWidth: 2,
-                    z: 10
-                },
-                line4: {
-                    type: 'line',
-                    yMin: 60,
-                    yMax: 60,
-                    borderColor: 'rgb(90, 90, 90)',
-                    borderWidth: 2,
-                    z: 10
-                }
-            }
+        case DisplayType.Rehu: //20, 30, 50, 60
+            lineHeights = [20, 30, 50, 60]
+            chartOptions.value.annotations = generateLineObjectsBasedOnLineHeights(lineHeights)
             break
-        case DisplayType.CO2c:
-            chartOptions.value.annotations = {
-                line1: {
-                    type: 'line',
-                    yMin: 1000,
-                    yMax: 1000,
-                    borderColor: 'rgb(90, 90, 90)',
-                    borderWidth: 2,
-                    z: 10
-                },
-                line2: {
-                    type: 'line',
-                    yMin: 2000,
-                    yMax: 2000,
-                    borderColor: 'rgb(90, 90, 90)',
-                    borderWidth: 2,
-                    z: 10
-                },
-            }
+        case DisplayType.CO2c: //1000, 2000
+            lineHeights = [1000, 2000]
+            chartOptions.value.annotations = generateLineObjectsBasedOnLineHeights(lineHeights)
             break
     }
 }
 
-//Does not work and i dont know why
-//TODO try the yAxis approach
+
 //https://stackoverflow.com/questions/28990708/how-to-set-max-and-min-value-for-y-axis
-//maybe im changing this property after its drawn? print before/afters
 function changeChartScaleBasedOnReadingType(type: DisplayType){
     switch (type){
         case DisplayType.Temp:
@@ -298,14 +238,13 @@ watch(() => props.readingToDisplay, (newDisplay, oldDisplay) => {
     // setChartBgColorBasedOnLastReading()
     try {
         updateBgColor(chartData.value.at(-1), props.readingToDisplay) 
-    }catch (err){
+    } catch (err) {
         console.log(err)
     }
     
     drawLinesBasedOnReadingType(newDisplay)
     changeChartScaleBasedOnReadingType(newDisplay)
 })
-
 
 </script>
 
@@ -314,10 +253,27 @@ watch(() => props.readingToDisplay, (newDisplay, oldDisplay) => {
 <style>
 
 /* TW does not support vertical text alignment at its core */
-.text-vert {
+/* .text-vert {
     writing-mode: vertical-lr;
     text-orientation: upright;
-    letter-spacing: -0.6rem;
+    text-align: center;
+    vertical-align: middle;
+    width: min-content;
+
+    font-size: min(3vh, 3vw);
+    line-height: 1;
+    letter-spacing: -0.5rem;
+} */
+
+.reading-type{
+    font-size: min(2vh, 2vw)
 }
+
+#belt {
+    font-size: min(4vh, 3vw);
+    /* line-height: 1vh; */
+}
+
+
 
 </style>
