@@ -71,8 +71,7 @@ export default defineEventHandler( async(event) => {
         }
     }
 
-    //TODO check if this follows a format
-    //no need, since if Prisma gets a non-existing sensorID, then it will just return null, which should
+    //if Prisma gets a non-existing sensorID, then it will just return null, which should
     //be checked for in the caller
     if (sensorID === undefined) throw createError({
         statusCode: 400,
@@ -121,8 +120,6 @@ export default defineEventHandler( async(event) => {
 
     /*If the sensor was found, but no (new) readings were found, this API will return an "empty" SingleSensorReadingsType obj
     defined below */
-
-    
 
     /*Instead of having N readings, each containing a single timedate, temperature, humidity and co2 value, i want to have
     4 lists of those values enclosed in one object. */

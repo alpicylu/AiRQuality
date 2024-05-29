@@ -21,15 +21,3 @@ export default function (){
     return { bgColor, updateBgColor } 
 
 }
-
-
-// export default function (data: number[], readingsType: DisplayType){
-    
-//     const todoList = useState('key', () => Array<string>())
-
-//     const addTodo = (payload: string) => {
-//         todoList.value = [...todoList.value, payload]
-//     }
-
-//     return {todoList, addTodo}
-// }
