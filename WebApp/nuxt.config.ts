@@ -1,4 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import path from 'path'
+
 export default defineNuxtConfig({
     ssr: false,
     devtools: { enabled: true },
@@ -12,5 +14,15 @@ export default defineNuxtConfig({
     },
     modules: [
         '@nuxtjs/tailwindcss',
+        'nuxt-primevue'
     ],
+    primevue: {
+        options: {
+          unstyled: true,
+        },
+        importPT: { from: path.resolve(__dirname, './presets/aura/') },
+        components: {
+            prefix: 'Prime'
+        }   
+    }
 })

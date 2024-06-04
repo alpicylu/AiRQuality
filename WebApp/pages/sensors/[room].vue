@@ -1,6 +1,6 @@
 <template>
 
-    <div id="large" class="flex-1 flex flex-col gap-4 mb-4 justify-around items-stretch w-full">
+    <div id="large" class="flex-1 flex flex-col gap-4 mb-4 justify-around items-stretch w-full ">
 
         <div class="flex-initial grid grid-cols-9 grid-rows-1">
             <div class="row-start-1 col-start-2 row-span-1 col-span-4 flex justify-center items-center">
@@ -21,9 +21,9 @@
         <div class="flex flex-initial justify-evenly items-center">
             <DatePicker v-model:pickerDate="dateA" class="min-w-min"/>
             <DatePicker v-model:pickerDate="dateB" class="min-w-min"/>
-            <button @click="getReadingsFromDateToDate" class="rounded-full bg-ext-margins p-3">Apply</button>
-            <button @click="getBatchAndFormat" class="rounded-full bg-ext-margins p-3">Default</button>
-            <button @click="buttonTestFunction" class="bg-ext-margins rounded-full p-3">CSV</button>
+            <button @click="getReadingsFromDateToDate" class="rounded-full p-3">Apply</button>
+            <button @click="getBatchAndFormat" class="rounded-full p-3">Default</button>
+            <button @click="buttonTestFunction" class="rounded-full p-3">CSV</button>
         </div>
 
     </div>
@@ -40,40 +40,49 @@
             <DetailViewSmallChartStat :data="chartDataReadings.co2c" :times="chartTime" :readingType="DisplayType.CO2c" />
         </div>
 
-        <!-- <div class="basis-1/12 flex justify-around items-center sticky bottom-0 bg-ext-content py-4">
-            <div class="flex justify-around bg-ext-margins rounded-full grow-[3]">
-                <button><CalendarOutline class="h-8"/></button>
-                <button><CalendarSolid class="h-8"/></button>
-                <button><CheckIcon class="h-8"/></button>
-            </div>
-            <button class="grow-[1]"><ArrowPathIcon class="h-8 mx-auto"/></button>
-            <button class="grow-[1]"><ArrowDownTrayIcon class="h-8 mx-auto"/></button>
-        </div> -->
-        <div class="basis-1/12 sticky bottom-0 bg-ext-content p-4">
-            <div class="flex justify-between items-center h-10 mb-4">
-                <DatePicker v-model:pickerDate="dateA" class="min-w-min p-3 h-10"/>
-                <DatePicker v-model:pickerDate="dateB" class="min-w-min p-3 h-10"/>
-                <button @click="getReadingsFromDateToDate" class="rounded-full bg-ext-margins p-2 h-10"><CheckIcon class="h-full"/></button>
-            </div>
-            <div class="flex justify-stretch items-center gap-10 h-10">
+        <div class="basis-1/12 flex justify-stretch mb-4">
+            <PrimeButton icon="pi pi-arrow-up" @click="bottomSidebarVisible = true"
+                pt:root:class="w-full bg-ext-content p-3"/>
+        </div>
+        <PrimeSidebar v-model:visible="bottomSidebarVisible" header="Options" position="bottom">
+            <div class="flex flex-col justify-center items-stretch gap-5">
+                <div class="flex justify-stretch items-center">
+                    <span class="w-24">Date From:</span>
+                    <DatePicker id="date-a" v-model:pickerDate="dateA" class="flex-1 p-3 h-10"/>
+                </div>
+                <div class="flex justify-stretch items-center">
+                    <span class="w-24">Date To:</span>
+                    <DatePicker id="date-b" v-model:pickerDate="dateB" class="flex-1 p-3 h-10"/>
+                </div>
+
+                <button id="date-submit" @click="getReadingsFromDateToDate" class="flex justify-around items-center flex-1 bg-ext-margins rounded-full p-2 h-10">
+                    <span>Confirm</span>
+                    <CheckIcon class="w-6"/>
+                </button>
+
                 <button @click="getBatchAndFormat" class="flex justify-around items-center flex-1 bg-ext-margins rounded-full p-2 h-10">
                     <span>Default</span>
-                    <ArrowPathIcon class="h-full"/>
+                    <ArrowPathIcon class="h-6"/>
                 </button>
                 <button @click="buttonTestFunction" class="flex justify-around items-center flex-1 bg-ext-margins rounded-full p-2 h-10">
                     <span>CSV</span>
-                    <ArrowDownTrayIcon class="h-full"/>
+                    <ArrowDownTrayIcon class="h-6"/>
                 </button>
+
             </div>
-        </div>
-        
+        </PrimeSidebar>
     </div>
 
 </template>
 
 <script setup lang="ts">
+/**Make a retractable "tray" for the controls in the small screen view 
+ * https://primevue.org/checkbox/
+*/
 import { Chart, Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
+import Sidebar from 'primevue/sidebar'
+import Button from 'primevue/button'
 import type { SingleSensorReadingsType } from '~/types/types';
 import { DisplayType } from '~/types/enums';
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
@@ -112,6 +121,8 @@ onUnmounted(() => {
         pollServerInterval = null
     }
 })
+
+const bottomSidebarVisible = ref(false)
 
 const chartDataReadings = ref<SingleSensorReadingsType>(<SingleSensorReadingsType>{}) //this is where fetched data is saved
 const chartTime = ref<string[]>([])
@@ -281,5 +292,26 @@ watchEffect(()=>{
             display: none;
         }
     }
+
+    /* #grid {
+        grid-template-areas: 
+        'dateA dateB submit';
+    }
+    #date-a {
+        grid-area: dateA;
+    }
+    #date-b {
+        grid-area: dateB;
+    }
+    #date-submit {
+        grid-area: submit;
+    }
+    @media (max-width: 400px){
+        #grid {
+            grid-template-areas: 
+            'dateA dateA submit'
+            'dateB dateB submit'; 
+        }
+    } */
 
 </style>

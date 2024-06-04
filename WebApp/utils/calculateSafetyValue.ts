@@ -27,3 +27,8 @@ export default function(reading: number, type: DisplayType): ChartHealthStatus{
 
     throw new Error(`Reading value's health status could not be assessed: ${type}, ${reading}`)
 }
+
+export function colorCalculateTest() {
+
+    
+}
