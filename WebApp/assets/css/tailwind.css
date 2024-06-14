@@ -12,11 +12,14 @@ tend to have. The @tailwind-s above is just some tailwind imports into this main
     /*Define you private colors here. Doing so will allow you to reference them
     in other selectors here and in the tailwind config*/
     --ext-primary-1 : #9AD8C6;
-    --ext-primary-2 : #2BDBA8;
+    --ext-primary-2 : #53E3B9;
     --ext-warning-1   : #FFCFB6;
-    --ext-warning-2   : #FF8B4F;
+    --ext-warning-2   : #FFA576;
     --ext-error-1 : #F1ACB7;
-    --ext-error-2 : #F1425E;
+    --ext-error-2 : #E86D81;
+
+    --ext-link: #2BDBA8;
+    --ext-hover: #BAE1D6;
 
     --ext-white     : #F4F4F5;
     --ext-gray-1    : #D3D4D7;
@@ -101,8 +104,43 @@ tend to have. The @tailwind-s above is just some tailwind imports into this main
         color: var(--ext-gray-3);
         background-color: var(--ext-white);
     }
-    button {
+
+}
+
+@layer components {
+    button, input {
+        background-color: var(--ext-primary-1);
+        color: var(--ext-gray-3)
+    }
+    button:hover {
+        background-color: var(--ext-hover);
+    }
+
+    /*Button customization thanks to https://moderncss.dev/pure-css-custom-styled-radio-buttons/*/
+    input[type="radio"] {
+        appearance: none;
+    
+        background-color: var(--ext-white);
+        margin: 0;
+        width: 1.15em;
+        height: 1.15em;
+        border: 0.15em solid var(--ext-primary-1);
+        border-radius: 50%;
+
+        display: grid;
+        place-content: center;
+    }
+    /*The sticky has z-index:10 because the circle would cover it otherwise. Wierd.*/
+    input[type="radio"]::before {
+        content: "";
+        width: 0.65em;
+        height: 0.65em;
+        border-radius: 50%;
+        transform: scale(0);
+        transition: 120ms transform ease-in-out;
         background-color: var(--ext-primary-2);
-        color: var(--ext-white)
+    }
+    input[type="radio"]:checked::before {
+        transform: scale(1);
     }
 }

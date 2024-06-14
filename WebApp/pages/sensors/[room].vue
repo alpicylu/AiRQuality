@@ -40,33 +40,32 @@
             <DetailViewSmallChartStat :data="chartDataReadings.co2c" :times="chartTime" :readingType="DisplayType.CO2c" />
         </div>
 
-        <div class="basis-1/12 flex justify-stretch mb-4">
-            <PrimeButton icon="pi pi-arrow-up" @click="bottomSidebarVisible = true"
-                pt:root:class="w-full bg-ext-content p-3"/>
-        </div>
+        <button class="basis-1/12 flex justify-stretch mb-4 rounded-full" @click="bottomSidebarVisible = true">
+            <i class="pi pi-arrow-up p-3 mx-auto"></i>
+        </button>
         <PrimeSidebar v-model:visible="bottomSidebarVisible" header="Options" position="bottom">
-            <div class="flex flex-col justify-center items-stretch gap-5">
+            <div class="flex flex-col justify-center items-stretch gap-5 text-xl">
                 <div class="flex justify-stretch items-center">
-                    <span class="w-24">Date From:</span>
-                    <DatePicker id="date-a" v-model:pickerDate="dateA" class="flex-1 p-3 h-10"/>
+                    <span class="w-24 text-base">Date From:</span>
+                    <DatePicker id="date-a" v-model:pickerDate="dateA" class="flex-1 p-3 h-10 "/>
                 </div>
-                <div class="flex justify-stretch items-center">
-                    <span class="w-24">Date To:</span>
-                    <DatePicker id="date-b" v-model:pickerDate="dateB" class="flex-1 p-3 h-10"/>
+                <div class="flex justify-stretch items-center ">
+                    <span class="w-24 text-base">Date To:</span>
+                    <DatePicker id="date-b" v-model:pickerDate="dateB" class="flex-1 p-3 h-10 "/>
                 </div>
 
-                <button id="date-submit" @click="getReadingsFromDateToDate" class="flex justify-around items-center flex-1 bg-ext-margins rounded-full p-2 h-10">
-                    <span>Confirm</span>
-                    <CheckIcon class="w-6"/>
+                <button id="date-submit" @click="getReadingsFromDateToDate" class="flex justify-around items-center flex-1 rounded-full p-2 h-10">
+                    <span class="w-20">Confirm</span>
+                    <i class="pi pi-check"></i>
                 </button>
 
-                <button @click="getBatchAndFormat" class="flex justify-around items-center flex-1 bg-ext-margins rounded-full p-2 h-10">
-                    <span>Default</span>
-                    <ArrowPathIcon class="h-6"/>
+                <button @click="getBatchAndFormat" class="flex justify-around items-center flex-1 rounded-full p-2 h-10">
+                    <span class="w-20">Default</span>
+                    <i class="pi pi-refresh"></i>
                 </button>
-                <button @click="buttonTestFunction" class="flex justify-around items-center flex-1 bg-ext-margins rounded-full p-2 h-10">
-                    <span>CSV</span>
-                    <ArrowDownTrayIcon class="h-6"/>
+                <button @click="buttonTestFunction" class="flex justify-around items-center flex-1 rounded-full p-2 h-10">
+                    <span class="w-20">CSV</span>
+                    <i class="pi pi-download"></i>
                 </button>
 
             </div>
@@ -89,9 +88,6 @@ ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScal
 
 import {formatDatesToHourMinute, formatDatesToHourDayMonth, formatDatesToDayMonth, formatDatesToDayMonthYear} from "~/utils/formatDateTimeStrings"
 import {msClientServerPollDelay} from "~/constants/constants"
-
-import { CalendarDaysIcon as CalendarOutline, CheckIcon, ArrowPathIcon, ArrowDownTrayIcon } from "@heroicons/vue/24/outline"
-import { CalendarDaysIcon as CalendarSolid } from "@heroicons/vue/24/solid"
 
 /**Upon navigating to this URL, check if the sensor name present in the URL exists in the DB. */
 definePageMeta({

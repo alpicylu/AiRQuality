@@ -23,8 +23,9 @@ export default <Partial<Config>>{
             'ext-error-1' : 'var(--ext-error-1)',
             'ext-error-2' : 'var(--ext-error-2)',
 
+            'ext-link' : 'var(--ext-link)',
+
             'ext-white'     : 'var(--ext-white)',
-            
             'ext-gray-1'    : 'var(--ext-gray-1)',
             'ext-gray-2'    : 'var(--ext-gray-2)',
             'ext-gray-3'    : 'var(--ext-gray-3)',

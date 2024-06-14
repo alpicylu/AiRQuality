@@ -25,9 +25,11 @@ API_key.ts
 
 test.*
 
-
 #Latex
 /Thesis/latex_temp/
 
 #docker
 docker-compose*.yaml
+
+#UI library files
+WebApp/presets

@@ -19,10 +19,14 @@ export default defineNuxtConfig({
     primevue: {
         options: {
           unstyled: true,
+          ptOptions: {
+            mergeProps: true
+          }
         },
         importPT: { from: path.resolve(__dirname, './presets/aura/') },
         components: {
             prefix: 'Prime'
-        }   
+        },
+        
     }
 })

@@ -2,7 +2,7 @@
 
     <input type="date" :value="pickerDate"
         @input="$emit('update:pickerDate', ($event.target as HTMLSelectElement).value)"
-        class="rounded-full p-3 bg-ext-margins" />
+        class="rounded-full p-3" />
     
 </template>
 

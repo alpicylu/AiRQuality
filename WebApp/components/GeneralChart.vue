@@ -1,22 +1,24 @@
 <template>
     <div class="flex flex-row flex-wrap gap-4 my-4 text-2xl h-full">
-        <NuxtLink id="room" :to="linkableRoomName" class="flex flex-1 grow-[1] justify-center items-center text-4xl"> {{ sensorData?.room }} </NuxtLink>
+        <NuxtLink id="room" :to="linkableRoomName" 
+            class="flex flex-1 grow-[1] justify-center items-center text-center text-4xl underline hover:bg-ext-primary-1 rounded-l-full"> {{ sensorData?.room }} </NuxtLink>
         <div id="chart" class="flex-1 grow-[7] overflow-hidden h-56">
             <ReactiveChart :data="chartData" :times="chartTime" :readingType="valueOfRadioGroup"/>
         </div>
         <form id="grid" class="flex-1 grow-[4] grid gap-2 justify-items-center items-center">
-            <input type="radio" :id="sensorData?.room + 'T'" :value=DisplayType.Temp :name="sensorData?.room" v-model="valueOfRadioGroup" :checked=tempCheck>
-            <label :for="sensorData?.room + 'T'">T</label>
-            <div > {{ tempDisplayable }} &#8451; </div>
+            <input type="radio" id="radioT" :value=DisplayType.Temp :name="sensorData?.room" v-model="valueOfRadioGroup" :checked=tempCheck >
+            <label id="labelT">T</label>
+            <div id="readingT"> {{ tempDisplayable }} &#8451; </div>
 
-            <input type="radio" :id="sensorData?.room + 'R'" :value=DisplayType.Rehu :name="sensorData?.room" v-model="valueOfRadioGroup" :checked="rehuCheck">
-            <label :for="sensorData?.room + 'R'">RH</label>
-            <div > {{ sensorData?.rehu.at(-1) }} % </div>
+            <input type="radio" id="radioRH" :value=DisplayType.Rehu :name="sensorData?.room" v-model="valueOfRadioGroup" :checked="rehuCheck">
+            <label id="labelRH">RH</label>
+            <div id="readingRH"> {{ sensorData?.rehu.at(-1) }} % </div>
 
-            <input type="radio" :id="sensorData?.room + 'C'" :value=DisplayType.CO2c :name="sensorData?.room" v-model="valueOfRadioGroup" :checked="co2cCheck">
-            <label :for="sensorData?.room + 'C'">CO2</label>
-            <div > {{ sensorData?.co2c.at(-1) }} ppm </div>
+            <input type="radio" id="radioCO2" :value=DisplayType.CO2c :name="sensorData?.room" v-model="valueOfRadioGroup" :checked="co2cCheck">
+            <label id="labelCO2">CO2</label>
+            <div id="readingCO2"> {{ sensorData?.co2c.at(-1) }} ppm </div>
         </form>
+        
     </div> 
 </template>
 
@@ -169,42 +171,35 @@ input {
         'radioCO2 labelCO2 readingCO2';
 }
 
-#grid>input:nth-of-type(1){
+#grid>#radioT {
     grid-area: radioT;
 }
-
-#grid>label:nth-of-type(1){
+#grid>#labelT {
     grid-area: labelT;
 }
-
-#grid>div:nth-of-type(1){
+#grid>#readingT {
     grid-area: readingT;
 }
 
-#grid>input:nth-of-type(2){
+#grid>#radioRH {
     grid-area: radioRH;
 }
-
-#grid>label:nth-of-type(2){
+#grid>#labelRH {
     grid-area: labelRH;
 }
-
-#grid>div:nth-of-type(2){
+#grid>#readingRH {
     grid-area: readingRH;
 }
 
-#grid>input:nth-of-type(3){
+#grid>#radioCO2 {
     grid-area: radioCO2;
 }
-
-#grid>label:nth-of-type(3){
+#grid>#labelCO2 {
     grid-area: labelCO2;
 }
-
-#grid>div:nth-of-type(3){
+#grid>#readingCO2 {
     grid-area: readingCO2;
 }
-
 /* Setting a constant height to the */
 /* Try the relative approach again, but remove height: 12rem */
 @media (max-width: 750px){
