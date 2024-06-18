@@ -3,7 +3,7 @@
         <NuxtLink id="room" :to="linkableRoomName" 
             class="flex flex-1 grow-[1] justify-center items-center text-center text-4xl underline hover:bg-ext-primary-1 rounded-l-full"> {{ sensorData?.room }} </NuxtLink>
         <div id="chart" class="flex-1 grow-[7] overflow-hidden h-56">
-            <ReactiveChart :data="chartData" :times="chartTime" :readingType="valueOfRadioGroup"/>
+            <ReactiveChart :data="chartDataC" :times="chartTimeC" :readingType="valueOfRadioGroup"/>
         </div>
         <form id="grid" class="flex-1 grow-[4] grid gap-2 justify-items-center items-center">
             <input type="radio" id="radioT" :value=DisplayType.Temp :name="sensorData?.room" v-model="valueOfRadioGroup" :checked=tempCheck >
@@ -102,24 +102,37 @@ const tempDisplayable = computed(() => {
     return undefined
 })
 
-function displayReadingBasedOnRadio(){
-    if (props.sensorData === undefined) return
-    switch (valueOfRadioGroup.value){
+// function displayReadingBasedOnRadio(){
+//     if (props.sensorData === undefined) return
+//     switch (valueOfRadioGroup.value){
+//         case DisplayType.Temp:
+//             chartData.value = props.sensorData.temp
+//             break
+//         case DisplayType.Rehu:
+//             chartData.value = props.sensorData.rehu
+//             break
+//         case DisplayType.CO2c:
+//             chartData.value = props.sensorData.co2c
+//             break
+//     }
+//     // debugger
+// }
+
+function displayReadingBasedOnRadio(checkedRadio: DisplayType, data: SingleSensorReadingsType|undefined){
+    if (data === undefined) return
+    switch (checkedRadio){
         case DisplayType.Temp:
-            chartData.value = props.sensorData.temp
-            break
+            return data.temp
+            
         case DisplayType.Rehu:
-            chartData.value = props.sensorData.rehu
-            break
+            return data.rehu
+            
         case DisplayType.CO2c:
-            chartData.value = props.sensorData.co2c
-            break
+            return data.co2c
+            
     }
+    // debugger
 }
-
-//Change layout once window width is at most 750px (same condition as the media query)
-
-/*Just make a media query in the layout .vue file */
 
 watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
     switch (newCheck){
@@ -141,19 +154,30 @@ watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
     }
 })
 
-watch(() => valueOfRadioGroup.value, (newVal, oldVal) => {
-    displayReadingBasedOnRadio()
-    // updateBgColor(chartData.value.at(-1), valueOfRadioGroup.value)
+// watch(() => valueOfRadioGroup.value, (newVal, oldVal) => {
+//     displayReadingBasedOnRadio()
+// })
+
+
+// watch(() => props.sensorData, (newData, oldData) => {
+//     console.log("Charts received new data")
+//     displayReadingBasedOnRadio()
+//     // if (newData !== undefined) chartTime.value = formatDatesToHourMinute(newData.time)
+// }, {deep: true})
+
+const chartDataC = computed(()=>{
+    console.log("Data Computed ran")
+    return displayReadingBasedOnRadio(valueOfRadioGroup.value, props.sensorData) ?? Array<number>()
 })
 
-watch(() => props.sensorData, (newData, oldData) => {
-    console.log("Charts received new data")
-    displayReadingBasedOnRadio()
-    // updateBgColor(chartData.value.at(-1), valueOfRadioGroup.value)
-    if (newData !== undefined) chartTime.value = formatDatesToHourMinute(newData.time)
-}, {deep: true})
+const chartTimeC = computed(()=>{
+    console.log("Time Computed ran")
+    return props.sensorData?.time ? formatDatesToHourMinute(props.sensorData.time) : Array<string>()
+})
 
-
+/**No data is displayed on charts, despite the colors and y-axis updating, because without this watcher firing
+ * chartTime and chartData remain unchanged - empty arrays.
+ */
 
 </script>
 

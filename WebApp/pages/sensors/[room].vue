@@ -14,13 +14,13 @@
             </div>
         </div>
 
-        <DetailViewLargeChartStat class="flex-auto min-h-32" :data="chartDataReadings.temp" :times="chartTime" :readingType="DisplayType.Temp" />
-        <DetailViewLargeChartStat class="flex-auto min-h-32" :data="chartDataReadings.rehu" :times="chartTime" :readingType="DisplayType.Rehu" />
-        <DetailViewLargeChartStat class="flex-auto min-h-32" :data="chartDataReadings.co2c" :times="chartTime" :readingType="DisplayType.CO2c" />
+        <DetailViewLargeChartStat class="flex-auto min-h-32" :data="tempReadings" :times="chartTime" :readingType="DisplayType.Temp" />
+        <DetailViewLargeChartStat class="flex-auto min-h-32" :data="rehuReadings" :times="chartTime" :readingType="DisplayType.Rehu" />
+        <DetailViewLargeChartStat class="flex-auto min-h-32" :data="co2cReadings" :times="chartTime" :readingType="DisplayType.CO2c" />
 
         <div class="flex flex-initial justify-evenly items-center">
-            <DatePicker v-model:pickerDate="dateA" class="min-w-min"/>
-            <DatePicker v-model:pickerDate="dateB" class="min-w-min"/>
+            <DatePicker v-model="dateA" class="min-w-min"/>
+            <DatePicker v-model="dateB" class="min-w-min"/>
             <button @click="getReadingsFromDateToDate" class="rounded-full p-3">Apply</button>
             <button @click="getBatchAndFormat" class="rounded-full p-3">Default</button>
             <button @click="buttonTestFunction" class="rounded-full p-3">CSV</button>
@@ -35,14 +35,16 @@
         <h1 class="basis-1/12 flex justify-center items-center mt-4">{{ fetchedSensorData.at(0)?.room }} (ID: {{ fetchedSensorData.at(0)?.iqrfId }})</h1>
 
         <div class="basis-10/12 flex flex-col justify-around gap-2">
-            <DetailViewSmallChartStat :data="chartDataReadings.temp" :times="chartTime" :readingType="DisplayType.Temp" />
-            <DetailViewSmallChartStat :data="chartDataReadings.rehu" :times="chartTime" :readingType="DisplayType.Rehu" />
-            <DetailViewSmallChartStat :data="chartDataReadings.co2c" :times="chartTime" :readingType="DisplayType.CO2c" />
+            <DetailViewSmallChartStat :data="tempReadings" :times="chartTime" :readingType="DisplayType.Temp" />
+            <DetailViewSmallChartStat :data="rehuReadings" :times="chartTime" :readingType="DisplayType.Rehu" />
+            <DetailViewSmallChartStat :data="co2cReadings" :times="chartTime" :readingType="DisplayType.CO2c" />
         </div>
 
         <button class="basis-1/12 flex justify-stretch mb-4 rounded-full" @click="bottomSidebarVisible = true">
             <i class="pi pi-arrow-up p-3 mx-auto"></i>
         </button>
+
+        <!-- Sidebar is deprecated, but i'm not dealing with styling it manually in v4 (presets currently not supported) -->
         <PrimeSidebar v-model:visible="bottomSidebarVisible" header="Options" position="bottom">
             <div class="flex flex-col justify-center items-stretch gap-5 text-xl">
                 <div class="flex justify-stretch items-center">
@@ -75,13 +77,8 @@
 </template>
 
 <script setup lang="ts">
-/**Make a retractable "tray" for the controls in the small screen view 
- * https://primevue.org/checkbox/
-*/
 import { Chart, Line } from 'vue-chartjs'
 import { Chart as ChartJS, Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale } from 'chart.js'
-import Sidebar from 'primevue/sidebar'
-import Button from 'primevue/button'
 import type { SingleSensorReadingsType } from '~/types/types';
 import { DisplayType } from '~/types/enums';
 ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScale, LinearScale)
@@ -120,7 +117,6 @@ onUnmounted(() => {
 
 const bottomSidebarVisible = ref(false)
 
-const chartDataReadings = ref<SingleSensorReadingsType>(<SingleSensorReadingsType>{}) //this is where fetched data is saved
 const chartTime = ref<string[]>([])
 
 const roomNumber = (useRoute().params.room as string).replace('_', ' ')
@@ -132,6 +128,22 @@ const dateB = ref('')
 
 const sensorIqrfID = computed(()=> {
     return fetchedSensorData.value.at(0)?.iqrfId
+})
+
+/**I need to alternate the source of charts while turning "off" the live feed of data from server
+ * I will achieve this through assigning a simple, static array of date-bound readings when choosing to display
+ * readings from a time period and assigning the fSD ref (its fields) when opting for the live feed.
+ */
+let tempReadings: ComputedRef<number[]> | Array<number> = computed(()=>{
+    return fetchedSensorData.value.at(0)?.temp ?? Array<number>()
+})
+
+let rehuReadings: ComputedRef<number[]> | Array<number> = computed(()=>{
+    return fetchedSensorData.value.at(0)?.rehu ?? Array<number>()
+})
+
+let co2cReadings: ComputedRef<number[]> | Array<number> = computed(()=>{
+    return fetchedSensorData.value.at(0)?.co2c ?? Array<number>()
 })
 
 const {fetchedSensorData, getFirstBatchSensorData, pollServerForNewReadings} = useGetSensorData()
@@ -163,21 +175,26 @@ function downloadBlob(blob: Blob, filename: string) {
     // This is required for one-off downloads of the blob content
     const clickHandler = () => {
         setTimeout(() => {
-        URL.revokeObjectURL(url);
-        removeEventListener('click', clickHandler);
+        URL.revokeObjectURL(url)
+        removeEventListener('click', clickHandler)
         }, 150);
     };
 
     // Add the click event listener on the anchor element
-    a.addEventListener('click', clickHandler, false);
+    a.addEventListener('click', clickHandler, false)
     a.click()
     a.removeEventListener('click', clickHandler, false)
 }
 
 async function getBatchAndFormat(){
     await getFirstBatchSensorData(nDataPointsOnChart.value, roomNumber).catch(console.error)
-    chartTime.value = formatDatesToHourMinute(fetchedSensorData.value.at(0)!.time)
+    chartTime.value = formatDatesToHourMinute(fetchedSensorData.value.at(0)!.time ?? Array<number>())
     if (pollServerInterval === null) pollServerInterval = setInterval(() => {pollServerForNewReadings(nDataPointsOnChart.value)}, msClientServerPollDelay) 
+
+    /**Switch to "live feed" */
+    tempReadings = computed(()=>fetchedSensorData.value.at(0)?.temp ?? Array<number>())
+    rehuReadings = computed(()=>fetchedSensorData.value.at(0)?.rehu ?? Array<number>())
+    co2cReadings = computed(()=>fetchedSensorData.value.at(0)?.co2c ?? Array<number>())
 }
 /**Run this function as soon as the renderer reaches this line (i dont think this would fly in SSR)*/
 getBatchAndFormat()
@@ -214,12 +231,11 @@ async function getReadingsFromDateToDate() {
     //there isnt really a case in my API route to return null, but ig useFetch can possibly return it if something goes bad?
     else if (readings === null) throw new Error("Room-specific sensor readings fetch failed - returned null")
 
-    // debugger
     console.log("n fetched records:", readings.id.length)
 
     //Decimate - cant get ChartJS to do its own decimation (maybe coz im using custom labels in datasets?)
     const decimationFactor = Math.ceil(readings.id.length / nDataPointsOnChart.value)
-    console.log(decimationFactor)
+    console.log("Decimation factor: ", decimationFactor)
 
     readings.id = readings.id.filter((el, i) => i % decimationFactor === 0) // i dont think i need to decimate that
     readings.time = readings.time.filter((el, i) => i % decimationFactor === 0)
@@ -228,7 +244,10 @@ async function getReadingsFromDateToDate() {
     readings.co2c = readings.co2c.filter((el, i) => i % decimationFactor === 0)
 
     // //save readings
-    chartDataReadings.value = readings    
+    // chartDataReadings.value = readings    
+    tempReadings = readings.temp
+    rehuReadings = readings.rehu
+    co2cReadings = readings.co2c
 
     //Decide on time-axis labels. Times are undefined if no readings were fetched
     const daysOfDifference = calcDateDiff(readings.time.at(0), readings.time.at(-1))
@@ -249,8 +268,10 @@ async function getReadingsFromDateToDate() {
     }
 }
 
-var pollServerInterval: null|NodeJS.Timeout = setInterval(() => {
-    pollServerForNewReadings(nDataPointsOnChart.value)
+var pollServerInterval: null|NodeJS.Timeout = setInterval(async () => {
+    await pollServerForNewReadings(nDataPointsOnChart.value)
+    //update x axis according to new data
+    chartTime.value = formatDatesToHourMinute(fetchedSensorData.value.at(0)!.time ?? Array<number>())
 }, msClientServerPollDelay)
 
 /**This watcher may seem a bit redundant - why not just pass it into the chart components? it would 
@@ -260,15 +281,22 @@ var pollServerInterval: null|NodeJS.Timeout = setInterval(() => {
  * switch the value of the variable the charts are reading from and this is the best way i found.
  * watchEffect evaluates eagerly, watch lazily. Here i need eagerness, otherwise charts will start out blank
  */
-watchEffect(()=>{
-    console.log(fetchedSensorData.value.at(0))
-    chartDataReadings.value.id = fetchedSensorData.value.at(0)?.id ?? Array<string>()
-    chartDataReadings.value.temp = fetchedSensorData.value.at(0)?.temp ?? Array<number>()
-    chartDataReadings.value.rehu = fetchedSensorData.value.at(0)?.rehu ?? Array<number>()
-    chartDataReadings.value.co2c = fetchedSensorData.value.at(0)?.co2c ?? Array<number>()
-})
+// watchEffect(()=>{
+//     console.log("watchEffect ran")
+//     chartDataReadings.value.id = fetchedSensorData.value.at(0)?.id ?? Array<string>()
+//     chartDataReadings.value.temp = fetchedSensorData.value.at(0)?.temp ?? Array<number>()
+//     chartDataReadings.value.rehu = fetchedSensorData.value.at(0)?.rehu ?? Array<number>()
+//     chartDataReadings.value.co2c = fetchedSensorData.value.at(0)?.co2c ?? Array<number>()
+//     debugger
+// })
 
 /* https://stackoverflow.com/questions/2809688/directory-chooser-in-html-page */
+
+/**Things to check:
+ * is the time axis behaving properly when switching sources. Does it properly update the time-axis when polling regularly?
+ * Do live tests to see if charts update
+ * Find a way to check if data is displayed properly in charts - right order, right reading, right chart.
+ */
 
 </script>
 
@@ -288,26 +316,5 @@ watchEffect(()=>{
             display: none;
         }
     }
-
-    /* #grid {
-        grid-template-areas: 
-        'dateA dateB submit';
-    }
-    #date-a {
-        grid-area: dateA;
-    }
-    #date-b {
-        grid-area: dateB;
-    }
-    #date-submit {
-        grid-area: submit;
-    }
-    @media (max-width: 400px){
-        #grid {
-            grid-template-areas: 
-            'dateA dateA submit'
-            'dateB dateB submit'; 
-        }
-    } */
 
 </style>

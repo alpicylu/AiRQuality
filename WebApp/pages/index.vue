@@ -20,7 +20,6 @@ import {msClientServerPollDelay} from '~/constants/constants'
 
 onMounted(()=>{
     /**Calling this func at onMounted hook  */
-    
 })
 
 const nDataPointsOnChart = ref<number>(24)
@@ -46,5 +45,6 @@ const pollingInterval = setInterval(() => {
     pollServerForNewReadings(nDataPointsOnChart.value)
 }, msClientServerPollDelay)
 
+/**Write a "pipeline" comparing the flow of data between the two views. */
 
 </script>

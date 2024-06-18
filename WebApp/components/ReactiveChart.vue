@@ -60,7 +60,8 @@ const backgroundColorPluginChart = computed(() => {
 })
 
 watch(() => props.data, (newReadings, oldReadings) => {
+    console.log("Color watcher ran")
     chartBgColorUpdate(newReadings.at(-1), props.readingType)
-}, {deep: true})
+}, {deep: true, immediate: true})
 
 </script>

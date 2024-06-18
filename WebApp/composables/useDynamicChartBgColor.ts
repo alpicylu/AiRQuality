@@ -3,10 +3,12 @@ import {colorPaletteObj} from '~/constants/colors'
 import {colorCalculateTest} from '~/utils/calculateSafetyValue'
 
 export default function() {
+    
     const bgColor = ref(colorPaletteObj.extError1)
 
     const updateBgColor = (data: number|undefined, readingsType: DisplayType) => { //FUNCTION TO ALTER THE STATE
-        if (data === undefined) throw new Error("Cannot update chart color - last datapoint is undefined")
+        
+        if (data === undefined) return
         let currentReadingQuality
         try {
             currentReadingQuality = colorCalculateTest(data, readingsType)

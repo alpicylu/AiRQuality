@@ -11,17 +11,23 @@ export default function (){
             a certain amount of readings from one sensor
         cursorToSensorMap - map of (sensorID - mostRecentReading). Serves to establish a cursor for future fetches
     */
-    const iqrfIdSensorList = ref<string[]>([])
     const fetchedSensorData = ref<SingleSensorReadingsType[]>([])
+    const cursorToSensorMap = ref(new Map())
+    const iqrfIdSensorList = ref<string[]>([])
     //Will this cursorMap behave as expected? its not an externalized state of the composable
     //only those 2 functions have access to it.
     //is this function somehow persisting its own state?
     //yes, its called a closure. The two functions i return keep the state of their lexical env.
     //this environment is NOT shared among different instances of the same closure.
-    const cursorToSensorMap = ref(new Map())
-
+    
     const getFirstBatchSensorData = async (howMany: number, roomName?: string) => {
-        fetchedSensorData.value = [] //clearing the array for the first batch
+        let tempSensorData: Array<SingleSensorReadingsType> = []
+        let tempCursorMap = new Map()
+        let tempIqrfList: Array<string> = []
+
+        // fetchedSensorData.value = [] //clearing the array for the first batch
+        // cursorToSensorMap.value = new Map() //and the cursor. Otherwise subsequent calls of this func get wonky.
+        // iqrfIdSensorList.value = [] //same thing here
         //also prevents a mess when [room].vue assigns decimated readings to object props of this array.
         const {data} = await useFetch("/api/sensors", {
             query: {room: roomName}
@@ -33,38 +39,52 @@ export default function (){
         //get a list of registered sensors from the DB
         // let iqrfIdSensorList: string[] = []
         data.value.sensors.forEach(el => {
-            iqrfIdSensorList.value.push(el.iqrfId)
+            tempIqrfList.push(el.iqrfId)
+            // iqrfIdSensorList.value.push(el.iqrfId)
         })
 
         await Promise.all(
-            iqrfIdSensorList.value.map((iqrfid) => $fetch<SingleSensorReadingsType>(`/api/sensors/${iqrfid}/readings?take=${howMany}&order=desc`))
+            tempIqrfList.map((iqrfid) => $fetch<SingleSensorReadingsType>(`/api/sensors/${iqrfid}/readings?take=${howMany}&order=desc`))
         ).then(res => {
             res.forEach(el => { //each promise resolved with a value - iterate over those resolves
                 const sensorData = el
                 if (sensorData == null) {
                     //need to push empty object of the same type, otherwise a mismatch
                     //will occur when updating the array
-                    fetchedSensorData.value.push(<SingleSensorReadingsType>{})
+                    tempSensorData.push(<SingleSensorReadingsType>{})
+                    // fetchedSensorData.value.push(<SingleSensorReadingsType>{})
                     return
-                }  
-                fetchedSensorData.value.push(sensorData)
-                cursorToSensorMap.value.set(sensorData.iqrfId, sensorData.id.at(0))
+                }
+                tempSensorData.push(sensorData)  
+                // fetchedSensorData.value.push(sensorData)
+                tempCursorMap.set(sensorData.iqrfId, sensorData.id.at(0))
+                // cursorToSensorMap.value.set(sensorData.iqrfId, sensorData.id.at(0))
             })
         }).catch(console.error)
 
-        if (fetchedSensorData.value.length !== iqrfIdSensorList.value.length) {
+        if (tempSensorData.length !== tempIqrfList.length) {
             throw new Error("Number of sensors that provided data is not equal to the amount of registered sensors")
         }
 
         /* Fetching with order=desc returns the most recent readings but in reverse-chrono order. This loop
         returns the data to its chronological order. */
-        fetchedSensorData.value.forEach(sensor => {
+        tempSensorData.forEach(sensor => {
             sensor.id.reverse()
             sensor.time.reverse()
             sensor.temp.reverse()
             sensor.rehu.reverse()
             sensor.co2c.reverse()
         })
+        // fetchedSensorData.value.forEach(sensor => {
+        //     sensor.id.reverse()
+        //     sensor.time.reverse()
+        //     sensor.temp.reverse()
+        //     sensor.rehu.reverse()
+        //     sensor.co2c.reverse()
+        // })
+        fetchedSensorData.value = tempSensorData
+        cursorToSensorMap.value = tempCursorMap
+        iqrfIdSensorList.value = tempIqrfList
     }
 
     const pollServerForNewReadings = async (howMany: number) => {
