@@ -6,10 +6,8 @@ export enum DisplayType {
 }
 
 export enum SortOptions {
-    Rasc = "Room Ascending",
-    Rdes = "Room Descending",
-    Tasc = "Temperature Ascending",
-    Tdes = "Temperature Descending",
+    ReadingAsc = "Reading Ascending",
+    ReadingDesc = "Reading Descending",
 }
 
 /**Enums can only be initialised with constants/literals.

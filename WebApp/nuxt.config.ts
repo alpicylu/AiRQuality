@@ -1,9 +1,15 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 import path from 'path'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
 export default defineNuxtConfig({
     ssr: false,
     devtools: { enabled: true },
+    vite: {
+        plugins: [
+            nodePolyfills()
+        ]
+    },
     app: {
         head: {
             title: "AiRQuality"
@@ -14,19 +20,19 @@ export default defineNuxtConfig({
     },
     modules: [
         '@nuxtjs/tailwindcss',
-        '@primevue/nuxt-module'
+        'nuxt-primevue',
+        '@nuxt/test-utils/module'
     ],
     primevue: {
         options: {
           unstyled: true,
           ptOptions: {
-            mergeProps: true
+            mergeProps: false
           }
         },
         importPT: { from: path.resolve(__dirname, './presets/aura/') },
         components: {
             prefix: 'Prime'
         },
-        
     }
 })

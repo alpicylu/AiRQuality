@@ -14,6 +14,8 @@ const props = defineProps<{
     times: string[]; //the x-axis part of a datapoint (datetime)
     readingType: DisplayType;
 }>()
+const dateRangeToDisplay: string = inject('dateRange') ?? ''
+const displayTitle: boolean = inject('displayTitle') ?? false
 
 const {bgColor: chartBgColor, updateBgColor: chartBgColorUpdate} = useDynamicChartBgColor()
 
@@ -41,6 +43,10 @@ const chartReactiveOptions = computed(()=> {
             legend: {
                 display: false
             },
+            title: {
+                display: displayTitle,
+                text: dateRangeToDisplay
+            }
         }
     }
 })
@@ -60,7 +66,6 @@ const backgroundColorPluginChart = computed(() => {
 })
 
 watch(() => props.data, (newReadings, oldReadings) => {
-    console.log("Color watcher ran")
     chartBgColorUpdate(newReadings.at(-1), props.readingType)
 }, {deep: true, immediate: true})
 

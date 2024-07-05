@@ -28,7 +28,7 @@ ChartJS.register(Title, Tooltip, Legend, LineElement, PointElement, CategoryScal
 
 import type {SensorDataType, SingleSensorReadingsType} from '~/types/types'
 import {DisplayType, SortOptions, ChartHealthStatus} from '~/types/enums'
-import {formatDatesToHourMinute} from '~/utils/formatDateTimeStrings'
+import {formatDates, getFormatBasedOnDateDiff } from '~/utils/formatDateTimeStrings'
 
 const props = defineProps<{
     checkAllRadios: DisplayType
@@ -47,53 +47,6 @@ const tempCheck = ref(false)
 const rehuCheck = ref(false)
 const co2cCheck = ref(false)
 
-const chartData = ref<number[]>([])
-const chartTime = ref<string[]>([])
-
-// const {bgColor, updateBgColor} = useDynamicChartBgColor()
-
-// const chartReactiveOptions = computed(() => {
-//     return {
-//         responsive: true,
-//         maintainAspectRatio: false,
-//         animation: {
-//             duration: 0
-//         },
-//         plugins: {
-//             legend: {
-//                 display: false
-//             },
-//         }
-//     }
-// })
-
-// const chartReactiveData = computed(() => {
-//     return {
-//         labels: chartTime.value, //if labels are undefined, the chart just wont display data (good)
-//         datasets: [{
-//             data: chartData.value,
-//             tension: 0.4,
-//             borderColor: '#000000',
-//             color: '#000000',
-//             fontColor: '#000000'
-//         }]
-//     }
-// })
-
-// const backgroundColorPlugin = computed(() => {
-//     return {
-//         id: 'customCanvasBackgroundColor',
-//         beforeDraw: (chart: any, args: any, options: any) => {
-//             const {ctx} = chart;
-//             ctx.save();
-//             ctx.globalCompositeOperation = 'destination-over';
-//             ctx.fillStyle = options.color || bgColor.value;
-//             ctx.fillRect(0, 0, chart.width, chart.height);
-//             ctx.restore();
-//         }
-//     }
-// });
-
 const tempDisplayable = computed(() => {
     const temp = props.sensorData?.temp.at(-1)
     if (temp !== undefined){
@@ -101,22 +54,6 @@ const tempDisplayable = computed(() => {
     }
     return undefined
 })
-
-// function displayReadingBasedOnRadio(){
-//     if (props.sensorData === undefined) return
-//     switch (valueOfRadioGroup.value){
-//         case DisplayType.Temp:
-//             chartData.value = props.sensorData.temp
-//             break
-//         case DisplayType.Rehu:
-//             chartData.value = props.sensorData.rehu
-//             break
-//         case DisplayType.CO2c:
-//             chartData.value = props.sensorData.co2c
-//             break
-//     }
-//     // debugger
-// }
 
 function displayReadingBasedOnRadio(checkedRadio: DisplayType, data: SingleSensorReadingsType|undefined){
     if (data === undefined) return
@@ -129,10 +66,10 @@ function displayReadingBasedOnRadio(checkedRadio: DisplayType, data: SingleSenso
             
         case DisplayType.CO2c:
             return data.co2c
-            
     }
     // debugger
 }
+
 
 watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
     switch (newCheck){
@@ -154,30 +91,44 @@ watch(() => props.checkAllRadios, (newCheck, oldCheck) => {
     }
 })
 
-// watch(() => valueOfRadioGroup.value, (newVal, oldVal) => {
-//     displayReadingBasedOnRadio()
-// })
-
-
-// watch(() => props.sensorData, (newData, oldData) => {
-//     console.log("Charts received new data")
-//     displayReadingBasedOnRadio()
-//     // if (newData !== undefined) chartTime.value = formatDatesToHourMinute(newData.time)
-// }, {deep: true})
-
 const chartDataC = computed(()=>{
-    console.log("Data Computed ran")
     return displayReadingBasedOnRadio(valueOfRadioGroup.value, props.sensorData) ?? Array<number>()
 })
 
+/**Rather, it should choose the format based on the difference between oldest and newest reading, but it should also display
+ * either the exact date of the first reading or something similar in case data is historical.
+ * For instance, if readings were frequent (1read/15min), but that data is a couple weeks old, then it should display readings
+ * in hh:mm format, but annotate that this data is from a certain date period.
+ * Solution: in such case, display a more 'verbose' reading on the first point (eg. dd.MM.yy) while keeping the rest in the more
+ * finely-grained format
+ * 
+ * Solution 2: Display readings range on chart in case its historical. Display "now" if not.
+ */
 const chartTimeC = computed(()=>{
-    console.log("Time Computed ran")
-    return props.sensorData?.time ? formatDatesToHourMinute(props.sensorData.time) : Array<string>()
+    return props.sensorData?.time ? 
+        formatDates(props.sensorData.time, getFormatBasedOnDateDiff(props.sensorData.time.at(0), props.sensorData.time.at(-1))) : 
+        Array<string>()
 })
 
 /**No data is displayed on charts, despite the colors and y-axis updating, because without this watcher firing
  * chartTime and chartData remain unchanged - empty arrays.
  */
+
+const dateRangeToDisplay = computed(()=>{
+    const dateA = props.sensorData?.time.at(0)
+    const dateB = new Date().toISOString()
+    if (!dateA || !dateB) return ''
+    else if (calcDateDiff(dateA, dateB) <=1) return 'Today'
+    else {
+        const [dateAFormatted, dateBformatted] = formatDates([dateA, props.sensorData?.time.at(-1)!], 'dd.MM.yy')
+        return `${dateAFormatted} - ${dateBformatted}` 
+    }
+})
+/**ToDo:
+ * will the below provide() remain reactive? Will it update itself when data changes?
+ */
+provide('displayTitle', true)
+provide('dateRange', dateRangeToDisplay.value)
 
 </script>
 

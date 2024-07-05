@@ -111,9 +111,11 @@ export default defineEventHandler( async(event) => {
             statusCode: 500,
             statusMessage: `Prisma encountered an error while fetching records from the database: ${prismaErrCode}`,
         })
+        //what response is returned if error is thrown
     }
 
-    if (raw === null) throw createError({ //TODO should this be an error? why not just return null
+    //I dont think this will ever trigger
+    if (raw === null) throw createError({ 
         statusCode: 404,
         statusMessage: `Sensor of ID ${sensorID} was not found in the DB`
     })

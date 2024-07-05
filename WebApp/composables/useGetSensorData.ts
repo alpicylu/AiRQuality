@@ -37,11 +37,10 @@ export default function (){
             throw new Error("Error fetching a list of available sensors. Possibly, the fetch failed to get any data (may fetched null)")
 
         //get a list of registered sensors from the DB
-        // let iqrfIdSensorList: string[] = []
         data.value.sensors.forEach(el => {
             tempIqrfList.push(el.iqrfId)
-            // iqrfIdSensorList.value.push(el.iqrfId)
         })
+        console.log(tempIqrfList)
 
         await Promise.all(
             tempIqrfList.map((iqrfid) => $fetch<SingleSensorReadingsType>(`/api/sensors/${iqrfid}/readings?take=${howMany}&order=desc`))
@@ -52,16 +51,14 @@ export default function (){
                     //need to push empty object of the same type, otherwise a mismatch
                     //will occur when updating the array
                     tempSensorData.push(<SingleSensorReadingsType>{})
-                    // fetchedSensorData.value.push(<SingleSensorReadingsType>{})
                     return
                 }
-                tempSensorData.push(sensorData)  
-                // fetchedSensorData.value.push(sensorData)
+                tempSensorData.push(sensorData)
                 tempCursorMap.set(sensorData.iqrfId, sensorData.id.at(0))
-                // cursorToSensorMap.value.set(sensorData.iqrfId, sensorData.id.at(0))
             })
         }).catch(console.error)
 
+        //This will never be true since im pushing empty obj if fetch reutrns null
         if (tempSensorData.length !== tempIqrfList.length) {
             throw new Error("Number of sensors that provided data is not equal to the amount of registered sensors")
         }
@@ -75,18 +72,14 @@ export default function (){
             sensor.rehu.reverse()
             sensor.co2c.reverse()
         })
-        // fetchedSensorData.value.forEach(sensor => {
-        //     sensor.id.reverse()
-        //     sensor.time.reverse()
-        //     sensor.temp.reverse()
-        //     sensor.rehu.reverse()
-        //     sensor.co2c.reverse()
-        // })
         fetchedSensorData.value = tempSensorData
         cursorToSensorMap.value = tempCursorMap
         iqrfIdSensorList.value = tempIqrfList
     }
 
+    /**ToDo:
+     * howMany is an argument that decides both on the number of readings fetched as well as the length of the fSD array. Revise whether its a good idea.
+     */
     const pollServerForNewReadings = async (howMany: number) => {
         //here, i shall abuse the fact that The fulfillment value is an array of fulfilled promises, 
         //in the order of the promises passed, regardless of completion order
@@ -136,7 +129,11 @@ export default function (){
             fetchedSensorData.value[i].co2c = fetchedSensorData.value[i].co2c.concat(newReadings[i]!.co2c)
 
             if (fetchedSensorData.value[i].id.length > howMany){
-                const nOldRecordsToRemove = newReadings[i]!.id.length
+                let nOldRecordsToRemove = fetchedSensorData.value[i].id.length - howMany
+                if (nOldRecordsToRemove < 0) nOldRecordsToRemove = 0
+                
+                // console.log('new: ', newReadings[i]!.id.length, 'old: ', fetchedSensorData.value[i].id.length, 'HM: ', howMany)
+                console.log('TO REMOVE:', nOldRecordsToRemove)
                 fetchedSensorData.value[i].id = fetchedSensorData.value[i].id.slice(nOldRecordsToRemove)
                 fetchedSensorData.value[i].time = fetchedSensorData.value[i].time.slice(nOldRecordsToRemove)
                 fetchedSensorData.value[i].temp = fetchedSensorData.value[i].temp.slice(nOldRecordsToRemove)

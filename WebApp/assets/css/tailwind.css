@@ -112,7 +112,7 @@ tend to have. The @tailwind-s above is just some tailwind imports into this main
         background-color: var(--ext-primary-1);
         color: var(--ext-gray-3)
     }
-    button:hover {
+    button:hover, input:hover {
         background-color: var(--ext-hover);
     }
 

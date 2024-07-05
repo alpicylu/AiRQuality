@@ -37,6 +37,7 @@ ChartJS.register(annotationPlugin);
 
 import type { SensorDataType, SingleSensorReadingsType } from "../types/types"
 import { DisplayType , ChartHealthStatus} from "../types/enums"
+import { format } from 'path';
 
 const props = defineProps<{
     sensorReadings?: SingleSensorReadingsType, //making it undefined so that charts will just be empty if no data
@@ -161,8 +162,7 @@ function choseSensorReadingToDisplay(allSensorReadings: SingleSensorReadingsType
             chartData.value = allSensorReadings.co2c
             break
     }
-    // chartTime.value = getHourMinFromDate(allSensorReadings.time)
-    chartTime.value = formatDatesToHourMinute(allSensorReadings.time)
+    chartTime.value = formatDates(allSensorReadings.time, 'hh:mm')
 }
 
 //https://www.chartjs.org/chartjs-plugin-annotation/latest/

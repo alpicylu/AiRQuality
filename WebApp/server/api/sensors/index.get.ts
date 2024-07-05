@@ -24,12 +24,12 @@ export default defineEventHandler( async(event) => {
             }
         })
     } catch (err) {
-        setResponseStatus(event, 500) //is there a point to this?
         var prismaErrCode: string = "Unknown Error"
         if (err instanceof Prisma.PrismaClientKnownRequestError) prismaErrCode = err.code
         throw createError({
             statusCode: 500,
-            statusMessage: `Prisma encountered an error while saving records to the database: ${prismaErrCode}`,
+            statusMessage: 'Internal Server Error',
+            message: `Prisma encountered an error while saving records to the database: ${prismaErrCode}`,
         })
     }
 
