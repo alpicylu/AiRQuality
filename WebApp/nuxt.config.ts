@@ -8,7 +8,10 @@ export default defineNuxtConfig({
     vite: {
         plugins: [
             nodePolyfills()
-        ]
+        ],
+    },
+    nitro: {
+        plugins: ['~/server/plugins/getIQRFData.ts']
     },
     app: {
         head: {
@@ -34,5 +37,5 @@ export default defineNuxtConfig({
         components: {
             prefix: 'Prime'
         },
-    }
+    },
 })
