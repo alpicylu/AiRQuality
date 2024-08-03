@@ -33,3 +33,7 @@ docker-compose*.yaml
 
 #UI library files
 WebApp/presets
+
+#Tests
+WebApp/tests/getIQRFData.test.ts
+WebApp/tests/vitestSandbox.test.ts

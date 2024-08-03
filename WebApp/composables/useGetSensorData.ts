@@ -40,7 +40,7 @@ export default function (){
         data.value.sensors.forEach(el => {
             tempIqrfList.push(el.iqrfId)
         })
-        console.log(tempIqrfList)
+        // console.log(tempIqrfList)
 
         await Promise.all(
             tempIqrfList.map((iqrfid) => $fetch<SingleSensorReadingsType>(`/api/sensors/${iqrfid}/readings?take=${howMany}&order=desc`))

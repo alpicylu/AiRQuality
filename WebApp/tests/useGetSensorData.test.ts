@@ -1,8 +1,8 @@
 // @vitest-environment nuxt
-import { mount } from '@vue/test-utils'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import type { SingleSensorReadingsType } from '~/types/types'
-import {mockNuxtImport, registerEndpoint} from '@nuxt/test-utils/runtime'
+import {registerEndpoint} from '@nuxt/test-utils/runtime'
+
 
 const mockedSensors = [
     {

@@ -9,16 +9,19 @@ import type { Sensor } from '@prisma/client'
 import {minServerSensorPollDelay} from '~/constants/constants'
 import {config} from 'dotenv' 
 import { DateTime } from 'luxon'
-
+import {defineNitroPlugin} from 'nitropack/runtime/plugin' //vitest wont run tests on this plugin unless i import this
+import {insertToDB} from '~/services/insertNewReadingsToDB'
+import {IQRFCloudComm} from "~/services/IQRFCloudComm";
 
 const prisma = new PrismaClient()
 config()
 
-const FRONT_DEV_MODE = true //setting this to true turns off the server (that is everything from polling to saving to DB)
-const SEND_READ_REQ_TO_SENSORS = false //Should the server issue an "uplc" request to the sensors?
+//need to export them for mocking
+export const FRONT_DEV_MODE = true //setting this to true turns off the server (that is everything from polling to saving to DB)
+export const SEND_READ_REQ_TO_SENSORS = false //Should the server issue an "uplc" request to the sensors?
 //setting this to false will only download readings from IQRFC
 
-var sensorList: Sensor[] //gets a list of all available sensors
+export const sensorList: Sensor[] = [] //gets a list of all available sensors
 
 /*
 You need to fetch as many new records as available.
@@ -33,7 +36,9 @@ export default defineNitroPlugin( async(nitroApp) => {
     if (!FRONT_DEV_MODE) {
         // await prisma.reading.deleteMany({}) 
 
-        sensorList = await getSensorList()
+        // sensorList = await getSensorList()
+        await getSensorList()
+            .then((res)=>res.forEach(el=>sensorList.push(el)))
         //scheduleJob will make the passed-in function run in a specified interval (every N mins)
         //node-schedule does not prevent callback overrun by itself - if the callback takes longer than the schedule
         //interval, then a new task will begin before the previous one completed.
@@ -87,14 +92,14 @@ async function constructURL(command: string, sensorIqrfId?: string): Promise<str
 }
 
 /*This function will fetch relevant data (room and iqrfID) of all sensors from the DB */
-async function getSensorList(): Promise<Sensor[]> {
+export async function getSensorList(): Promise<Sensor[]> {
     const sensors: Sensor[] = await prisma.sensor.findMany({})
     return sensors
 }
 
 //TODO my server should recognize when a request for data of a particular sensor has been sent
 //but no sensor data were recieved - uplc was OK but i havnt fetched dnld for the sensor i polled.
-async function pollSensors() {
+export async function pollSensors() { //exported for the sake of testing
 
     /*The below fetch will basically tell the cloud server "call the GW and ask it to get data
     from all sensors, then have it send that data back to the cloud"
@@ -109,11 +114,13 @@ async function pollSensors() {
     if (SEND_READ_REQ_TO_SENSORS) {
         await Promise.all(
             //returns an array of fetch promises
-            sensorList.map(async (sensor) => $fetch<string>(await constructURL("uplc", sensor.iqrfId), {retry: 3, retryDelay: 1000}))
+            // sensorList.map(async (sensor) => $fetch<string>(await constructURL("uplc", sensor.iqrfId), {retry: 3, retryDelay: 1000}))
+            sensorList.map(async (sensor)=>IQRFCloudComm("uplc", sensor.iqrfId, {retry: 3, retryDelay: 1000}))
         )
         .then((res) => { //res is an array of values resolved from all provided Promises.
             if (res.length !== sensorList.length) throw new Error("More resolves were produced than there are sensors")
             res.forEach((el, i, self) => {
+                console.log(el)
                 atLeastOnePassed = atLeastOnePassed || (el === "OK;")
                 //res and sensorList are always of the same lenght, so its safe to do that
                 if (el !== "OK;") failedRequests.push(sensorList[i])
@@ -149,7 +156,8 @@ async function pollSensors() {
         /*Ask the server for the data periodically. If data is delivered, cancel the timer and resolve the promise. 
         Otherwise, repeat the request up to a limit, then reject the promise. */ 
         const intervalID = setInterval(async () => {
-            $fetch<string>(await constructURL("dnld"))
+            // $fetch<string>(await constructURL("dnld"))
+            IQRFCloudComm("dnld")
             .then(res => {
                 const parsedData = parseRawServerData(res)
                 if (parsedData !== null){
@@ -181,7 +189,7 @@ This function deals with extracting info from this blob
 I use a series of RegExes to filter relevat data. A singular data-string can contain data from multiple sensors
 so i need to filter them out and extract the data.
  */
-function parseRawServerData(rawData: string): Array<SensorDataType | null> | null {
+export function parseRawServerData(rawData: string): Array<SensorDataType | null> | null {
     console.log("V--raw server data--V")
     console.log(rawData)
     console.log("^--raw server data--^")
@@ -198,7 +206,7 @@ function parseRawServerData(rawData: string): Array<SensorDataType | null> | nul
     //el[0] - the entire matched substring   el[1] - first matched group (record index)
     //el[2] - second (datetime) etc.
     arr.forEach((el, i, arr) => {
-        var readings = parseSensorData(el[3])
+        var readings = parseSensorData(el[3]) 
         //IQRF Cloud is 1h+ compared to warsaw (Warsaw 20:00 -> IQRFC 21:00)
         //Turns out, IQRFC's server is not ahead - its in Czechia which has the same TZ as Poland
         //The sensors themselves are probably configured with their clock being +1h.
@@ -217,7 +225,7 @@ function parseRawServerData(rawData: string): Array<SensorDataType | null> | nul
 }
 
 //we need to filter out responses that we dont really caer about, like "GW connected" or "talked to a sensor"
-function filterSensorData(rawSensor: string): boolean {
+export function filterSensorData(rawSensor: string): boolean {
     if (rawSensor.slice(0, 4) === "0000") return false //data sent by GW once it connects to the server
     //a propper sensor-message has a sequence of bytes: XXXX.5E.81.(0140|0150)
     const filterRex = /(\d{4})(5E81)(0140|0150)(00)(?:[A-Z0-9]+)/g
@@ -236,7 +244,7 @@ This string contains device ID, command that was issued, peripheral address, har
 and finally the data that was sent from the sensor. We pretty much only care about the data and sensor ID. 
 The data that this function gets is equivalent to 1 record from IQRF cloud*/
 //TODO this approach will only work if the order of sensor readings does not change.
-function parseSensorData(rawSensor: string): SensorDataType | null {
+export function parseSensorData(rawSensor: string): SensorDataType | null {
     if (!filterSensorData(rawSensor)) return null
 
     //Look up the sensor's docs - to get temperature from "raw" reading, multiply it by 0.0625 (to get C)
@@ -286,28 +294,3 @@ function parseSensorData(rawSensor: string): SensorDataType | null {
 
     return result
 }
-
-/*This server can get multiple data-bearing responses per request, so multiple records can be saved to DB at a time.
-Every record that was transmited to the cloud (those marked as "Rx" in the iqrf cloud admin page) is downloaded.
-Not every record contains useful data - some records basically tell the cloud, that a request was sent to the GW - those are useless to us.
-After download the plugin determines which records contain sensor data, and which dont. Those that dont are simply 
-represented as null. Those that do are treated as an object of type "SensorDataType"
-Here, we get an array of data-bearing-objects and nulls (nulls are the boring, data-less records from IQRFCloud).
-The interesting objects are saved to the DB. */
-async function insertToDB(data: (SensorDataType | null)[]): Promise<void> {
-
-    await Promise.all(
-        data.map((element) => {
-            if (element !== null)
-                return $fetch(`/api/sensors/${element.id}/readings`, {
-                    method: 'POST',
-                    body: element
-            })
-        })
-    )
-    .then(res => console.log("Fetched sensor readings saved to DB"))
-    .catch(err => {
-        console.log("Some sensor data failed to be saved to DB")
-        console.log(err)
-    })
-}  
