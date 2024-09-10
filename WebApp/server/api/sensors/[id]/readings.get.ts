@@ -13,23 +13,45 @@ appear on the left side of the chart, whereas oldest to the right - which makes 
 i need to reverse it.
  */
 export default defineEventHandler( async(event) => {
+
     const sensorID: string | undefined = getRouterParam(event, 'id')
+
+    //i dont think its ever going to be undefined, because if it was undef then the client would not
+    //reach this API endpoint, but whatever
+    if (sensorID === undefined) throw createError({
+        statusCode: 400,
+        statusMessage: "Sensor ID route parameter is undefined"
+    })
+    const sensorIDRegex = /^\d{4}$/
+    if(typeof(sensorID)==='string' && !sensorIDRegex.test(sensorID)){
+        throw createError({
+            statusCode: 400,
+            statusMessage: "Bad Request",
+            message: `Invalid query parameter: sensorID: ${sensorID}`
+        })
+    }
+
     const queryParams = getQuery(event)
 
     let recordLimit: number|undefined = undefined 
-    if (typeof queryParams.take === 'string'){ 
+    console.log(recordLimit)
+    if (typeof(queryParams.take) === 'string'){ 
         recordLimit = parseInt(queryParams.take.toString())
     }
+    console.log(recordLimit)
 
     let readingIdCursor: string|undefined = undefined //id of the last fetched reading
     let skipNRecords: number|undefined = undefined //to omit the last record from the last batch (if skip == 1)
     if (typeof queryParams.cursor === 'string') {
-        //TODO check if reading with this id (cursor) exists
-        if (!/^[0-9a-fA-F]{24}$/g.test(queryParams.cursor)) createError({
-            statusCode: 400,
-            statusMessage: "Bad Request",
-            message: `Invalid reading cursor ID: ${readingIdCursor}. Must be a hexadecimal string, 24-chars in length`
-        })
+        //TODO check if reading with this id (cursor) can exist
+        // console.log(queryParams.cursor)
+        if (!/^[0-9a-fA-F]{24}$/g.test(queryParams.cursor)) {
+            throw createError({
+                statusCode: 400,
+                statusMessage: "Bad Request",
+                message: `Invalid reading cursor ID. Must be a hexadecimal string, 24-chars in length`
+            })
+        }
 
         readingIdCursor = queryParams.cursor 
         skipNRecords = 1
@@ -38,7 +60,7 @@ export default defineEventHandler( async(event) => {
     let dateFilter = undefined
     if (typeof queryParams.dateA === 'string' && typeof queryParams.dateB === 'string'){
 
-        if (isNaN(Date.parse(queryParams.dateA)) || isNaN(Date.parse(queryParams.dateB))) createError({
+        if (isNaN(Date.parse(queryParams.dateA)) || isNaN(Date.parse(queryParams.dateB))) throw createError({
             statusCode: 400,
             statusMessage: "Bad Request",
             message: `One of the dates is in an invalid format`
@@ -62,21 +84,14 @@ export default defineEventHandler( async(event) => {
                 sortOrder = Prisma.SortOrder.desc
                 break
             default: 
-                createError({
+                throw createError({
                     statusCode: 400,
                     statusMessage: "Bad Request",
                     message: `Invalid sort order. Valid ones are 'asc' or 'desc'`
                 })
-                break
+                
         }
     }
-
-    //if Prisma gets a non-existing sensorID, then it will just return null, which should
-    //be checked for in the caller
-    if (sensorID === undefined) throw createError({
-        statusCode: 400,
-        statusMessage: "Sensor ID route parameter is undefined"
-    })
 
     let raw = null
     try {
@@ -108,16 +123,17 @@ export default defineEventHandler( async(event) => {
         var prismaErrCode: string = "Unknown Error"
         if (err instanceof Prisma.PrismaClientKnownRequestError) prismaErrCode = err.code
         throw createError({
+            message: `Prisma encountered an error while fetching records from the database: ${prismaErrCode}`,
             statusCode: 500,
-            statusMessage: `Prisma encountered an error while fetching records from the database: ${prismaErrCode}`,
+            statusMessage: 'Internal Server Error',
         })
         //what response is returned if error is thrown
     }
 
-    //I dont think this will ever trigger
     if (raw === null) throw createError({ 
+        message: `Sensor of ID ${sensorID} was not found in the DB`,
         statusCode: 404,
-        statusMessage: `Sensor of ID ${sensorID} was not found in the DB`
+        statusMessage: "Not Found"
     })
 
     /*If the sensor was found, but no (new) readings were found, this API will return an "empty" SingleSensorReadingsType obj
@@ -145,5 +161,7 @@ export default defineEventHandler( async(event) => {
         result.co2c.push(el.co2c)
     })
 
+    setResponseStatus(event, 200)
+    
     return result
 })

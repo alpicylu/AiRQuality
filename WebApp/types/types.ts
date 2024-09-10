@@ -2,7 +2,7 @@
 
 //What you get from 1 sensor after asking it about the weather + time. This is a single datapoint a sensor represents
 export interface SensorDataType {
-    time: string,
+    time: string, //UTC ISO 2023-06-09T06:09:06.000+00:00
     temp: number,
     rehu: number,
     co2c: number,
