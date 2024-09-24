@@ -33,14 +33,12 @@ export default defineEventHandler( async(event) => {
 
     const queryParams = getQuery(event)
 
-    let recordLimit: number|undefined = undefined 
-    console.log(recordLimit)
+    let take: number|undefined = undefined
     if (typeof(queryParams.take) === 'string'){ 
-        recordLimit = parseInt(queryParams.take.toString())
+        take = parseInt(queryParams.take.toString())
     }
-    console.log(recordLimit)
 
-    let readingIdCursor: string|undefined = undefined //id of the last fetched reading
+    let cursor: string|undefined = undefined //id of the last fetched reading
     let skipNRecords: number|undefined = undefined //to omit the last record from the last batch (if skip == 1)
     if (typeof queryParams.cursor === 'string') {
         //TODO check if reading with this id (cursor) can exist
@@ -53,7 +51,7 @@ export default defineEventHandler( async(event) => {
             })
         }
 
-        readingIdCursor = queryParams.cursor 
+        cursor = queryParams.cursor 
         skipNRecords = 1
     }
 
@@ -74,14 +72,14 @@ export default defineEventHandler( async(event) => {
         }
     }
 
-    let sortOrder: Prisma.SortOrder|undefined = undefined
+    let order: Prisma.SortOrder|undefined = undefined
     if (typeof queryParams.order === 'string'){
         switch (queryParams.order){
             case 'asc':
-                sortOrder = Prisma.SortOrder.asc
+                order = Prisma.SortOrder.asc
                 break
             case 'desc':
-                sortOrder = Prisma.SortOrder.desc
+                order = Prisma.SortOrder.desc
                 break
             default: 
                 throw createError({
@@ -111,10 +109,10 @@ export default defineEventHandler( async(event) => {
                         id: true //although useless for displaying, its crucial for cursor-based pagination
                     },
                     where: dateFilter,
-                    orderBy: {timestamp: sortOrder }, //take the latest readings first
-                    take: recordLimit,
+                    orderBy: {timestamp: order }, //take the latest readings first
+                    take: take,
                     skip: skipNRecords,
-                    cursor: readingIdCursor !== undefined ? { id: readingIdCursor } : undefined
+                    cursor: cursor !== undefined ? { id: cursor } : undefined
                 }
             }
         })

@@ -1,4 +1,4 @@
-import type { SingleSensorReadingsType, JSONValue } from "~/types/types"
+import type { SingleSensorReadingsType } from "~/types/types"
 
 
 /**Note: For future projects, dont accept individual query parameters as arguments into functions 
@@ -7,9 +7,6 @@ import type { SingleSensorReadingsType, JSONValue } from "~/types/types"
  * params i want into the request without needing to edit the API too much.
  */
 
-/**TODO
- * Describe, or type, the query parameters each function should accept
- */
 export default function (){
 
     /*State:
@@ -27,31 +24,19 @@ export default function (){
     //yes, its called a closure. The two functions i return keep the state of their lexical env.
     //this environment is NOT shared among different instances of the same closure.
     
-    // const getFirstBatchSensorData = async (readingsQuery: {[index: string]: JSONValue}, sensorQuery?: {[index: string]: JSONValue}) => {
-    const getFirstBatchSensorData = async (
-            readingsQuery: {
-                take?: number,
-                cursor?: string,
-                dateA?: string,
-                dateB?: string,
-                order?: string
-            }, 
-            sensorQuery?: {
-                iqrfid?: string,
-                room?: string
-            }) => {
+    const getFirstBatchSensorData = async (howMany: number, roomName?: string) => {
         let tempSensorData: Array<SingleSensorReadingsType> = []
         let tempCursorMap = new Map()
         let tempIqrfList: Array<string> = []
-        const readingsQueryParams = readingsQuery //dont want to edit the original obj
 
         // fetchedSensorData.value = [] //clearing the array for the first batch
         // cursorToSensorMap.value = new Map() //and the cursor. Otherwise subsequent calls of this func get wonky.
         // iqrfIdSensorList.value = [] //same thing here
         //also prevents a mess when [room].vue assigns decimated readings to object props of this array.
         const {data} = await useFetch("/api/sensors", {
-            query: sensorQuery
+            query: {room: roomName}
         })
+
         if (data.value?.sensors === undefined)
             throw new Error("Error fetching a list of available sensors. Possibly, the fetch failed to get any data (may fetched null)")
 
@@ -59,12 +44,10 @@ export default function (){
         data.value.sensors.forEach(el => {
             tempIqrfList.push(el.iqrfId)
         })
+        // console.log(tempIqrfList)
 
-        readingsQueryParams['order'] = 'desc'
         await Promise.all(
-            tempIqrfList.map((iqrfid) => $fetch<SingleSensorReadingsType>(`/api/sensors/${iqrfid}/readings`, {
-                query: readingsQueryParams
-            }))
+            tempIqrfList.map((iqrfid) => $fetch<SingleSensorReadingsType>(`/api/sensors/${iqrfid}/readings?take=${howMany}&order=desc`))
         ).then(res => {
             res.forEach(el => { //each promise resolved with a value - iterate over those resolves
                 const sensorData = el
@@ -101,11 +84,7 @@ export default function (){
     /**ToDo:
      * howMany is an argument that decides both on the number of readings fetched as well as the length of the fSD array. Revise whether its a good idea.
      */
-    const pollServerForNewReadings = async (
-        readingsQuery: {
-            take: number,
-            [index: string]: any
-        }) => {
+    const pollServerForNewReadings = async (howMany: number) => {
         //here, i shall abuse the fact that The fulfillment value is an array of fulfilled promises, 
         //in the order of the promises passed, regardless of completion order
         //The order of readings fetched here and the initial fetch from getFirstBatch... is coordinated by 2 things:
@@ -113,22 +92,11 @@ export default function (){
         //2. Promise.all returns fulfillment values in the same order that the promises inside of it were passed.
         //The order of sensors here and in the fetchedSensorData array is the same.
         //And i know the promises will be created in the same order because in both cases they are created from the iqrfSensorList arr.
-
-        //temp obj so that the original stays unmodified
-        // const take: JSONValue = readingsQuery['take']
-        if (readingsQuery.take === undefined) throw new Error('query argument lacks "take" field')
-        if ( typeof(readingsQuery.take) !== 'number' ) throw new Error('query argument "take" is non-numeric')
-
-        const readingsQueryParams = readingsQuery
         let newReadings: (SingleSensorReadingsType|null)[] = []
         await Promise.all(
             iqrfIdSensorList.value.map((iqrf) => {
-                const sensorCurrentCursor = cursorToSensorMap.value.get(iqrf) //need to add cursor to query obj
-                readingsQueryParams['order'] = 'asc'
-                readingsQueryParams['cursor'] = sensorCurrentCursor
-                return $fetch(`/api/sensors/${iqrf}/readings`, {
-                    query: readingsQueryParams
-                })
+                const sensorCurrentCursor = cursorToSensorMap.value.get(iqrf)
+                return $fetch(`/api/sensors/${iqrf}/readings?take=${howMany}&order=asc&cursor=${sensorCurrentCursor}`)
             })
         ).then(res => {
             res.forEach(el => {
@@ -160,8 +128,8 @@ export default function (){
             fetchedSensorData.value[i].rehu = fetchedSensorData.value[i].rehu.concat(newReadings[i]!.rehu)
             fetchedSensorData.value[i].co2c = fetchedSensorData.value[i].co2c.concat(newReadings[i]!.co2c)
 
-            if (fetchedSensorData.value[i].id.length > readingsQuery.take){
-                let nOldRecordsToRemove = fetchedSensorData.value[i].id.length - readingsQuery.take
+            if (fetchedSensorData.value[i].id.length > howMany){
+                let nOldRecordsToRemove = fetchedSensorData.value[i].id.length - howMany
                 if (nOldRecordsToRemove < 0) nOldRecordsToRemove = 0
 
                 fetchedSensorData.value[i].id = fetchedSensorData.value[i].id.slice(nOldRecordsToRemove)

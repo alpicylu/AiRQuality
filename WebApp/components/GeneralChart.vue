@@ -1,7 +1,7 @@
 <template>
     <div class="flex flex-row flex-wrap gap-4 my-4 text-2xl h-full">
         <NuxtLink id="room" :to="linkableRoomName" 
-            class="flex flex-1 grow-[1] justify-center items-center text-center text-4xl underline hover:bg-ext-primary-1 rounded-l-full"> {{ sensorData?.room }} </NuxtLink>
+            class="flex flex-1 grow-[1] justify-center items-center text-center min-h-6 text-4xl underline hover:bg-ext-primary-1 rounded-l-full"> {{ sensorData?.room }} </NuxtLink>
         <div id="chart" class="flex-1 grow-[7] overflow-hidden h-56">
             <ReactiveChart :data="chartDataC" :times="chartTimeC" :readingType="valueOfRadioGroup"/>
         </div>
@@ -186,6 +186,7 @@ input {
         flex: 1 1 500px;
         font-size: 1.25rem/* 24px */;
         line-height: 0.25rem/* 32px */;
+        border-radius: 9999px;
     }
     #grid {
         flex: 1 1 500px;

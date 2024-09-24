@@ -82,7 +82,7 @@ describe('getFirstBatchSensorData', ()=>{
         mockedSensorsResponse.mockImplementation(()=>({sensors: mockedSensors}))
 
         const {fetchedSensorData, getFirstBatchSensorData} = useGetSensorData()
-        await getFirstBatchSensorData(3) //the number here does not matter
+        await getFirstBatchSensorData({take: 3}) //the number here does not matter
         expect(fetchedSensorData.value[0].temp).toStrictEqual([35, 12 ,10])
         expect(fetchedSensorData.value[0].rehu).toStrictEqual([20, 15 ,10])
         expect(fetchedSensorData.value[0].id).toStrictEqual(['aac', 'aab', 'aaa'])
@@ -93,7 +93,7 @@ describe('getFirstBatchSensorData', ()=>{
         mockedSensorsResponse.mockImplementation(()=>({sensors: mockedSensors}))
 
         const {fetchedSensorData, getFirstBatchSensorData} = useGetSensorData()
-        await getFirstBatchSensorData(3) //the number here does not matter
+        await getFirstBatchSensorData({take: 3}) //the number here does not matter
         expect(fetchedSensorData.value[0].temp).toStrictEqual([])
         expect(fetchedSensorData.value[0].rehu).toStrictEqual([])
         expect(fetchedSensorData.value[0].id).toStrictEqual([])
@@ -110,7 +110,7 @@ describe('getFirstBatchSensorData', ()=>{
         mockedSensorsResponse.mockImplementation(()=>{sensors: []})
 
         const {fetchedSensorData, getFirstBatchSensorData} = useGetSensorData()
-        expect(async()=>await getFirstBatchSensorData(3)).rejects.toThrowError('Error fetching a list of available sensors')
+        expect(async()=>await getFirstBatchSensorData({take: 3})).rejects.toThrowError('Error fetching a list of available sensors')
     })
 })
 
@@ -127,13 +127,13 @@ describe('pollServerForNewReadings', ()=>{
         const {fetchedSensorData, iqrfIdSensorList, getFirstBatchSensorData, pollServerForNewReadings} = useGetSensorData()
 
         //just a setup test
-        await getFirstBatchSensorData(3) //does not matter the argument
+        await getFirstBatchSensorData({take: 3}) //does not matter the argument
         expect(fetchedSensorData.value[0].temp).toStrictEqual([35, 12, 10])
         expect(iqrfIdSensorList.value).toStrictEqual(['TEST', 'TEST', 'TEST', 'TEST'])
 
         //One record too many in fSD, should pop the oldest one from the array
         mockedReadingsResponse.mockImplementation(()=>(mockedSensorData[2]))
-        await pollServerForNewReadings(5) //this is also the number controlling how many readings max should be in fSD after each pol
+        await pollServerForNewReadings({take: 5}) //this is also the number controlling how many readings max should be in fSD after each pol
         expect(fetchedSensorData.value[0].temp).toStrictEqual([12, 10, 999, 998, 997])
 
         //Room for one more record in fSD, should just add newer records without popping anything
@@ -145,26 +145,42 @@ describe('pollServerForNewReadings', ()=>{
         mockedReadingsResponse.mockImplementation(()=>(mockedSensorData[0]))
         const {fetchedSensorData, iqrfIdSensorList, getFirstBatchSensorData, pollServerForNewReadings} = useGetSensorData()
 
-        await getFirstBatchSensorData(3) //does not matter the argument
+        await getFirstBatchSensorData({take: 3}) //does not matter the argument
         expect(fetchedSensorData.value[0].temp).toStrictEqual([35, 12, 10])
         expect(iqrfIdSensorList.value).toStrictEqual(['TEST', 'TEST', 'TEST', 'TEST'])
 
         mockedReadingsResponse.mockImplementation(()=>(mockedSensorData[2]))
-        await pollServerForNewReadings(7)
+        await pollServerForNewReadings({take: 7}) //take max 7, but only 3 available, brings us to 6 (room for one more)
         expect(fetchedSensorData.value[0].temp).toStrictEqual([35, 12, 10, 999, 998, 997])
     })
 
     test('no sensor returned data', async()=>{
         mockedSensorsResponse.mockImplementation(()=>({sensors: mockedSensors}))
         mockedReadingsResponse.mockImplementation(()=>(mockedSensorData[0]))
-        const {fetchedSensorData, iqrfIdSensorList, getFirstBatchSensorData, pollServerForNewReadings} = useGetSensorData()
+        const {fetchedSensorData, iqrfIdSensorList, getFirstBatchSensorData, pollServerForNewReadings} = useGetSensorData() 
 
-        await getFirstBatchSensorData(3) //does not matter the argument
+        await getFirstBatchSensorData({take: 3}) //does not matter the argument
         expect(fetchedSensorData.value[0].temp).toStrictEqual([35, 12, 10])
         expect(iqrfIdSensorList.value).toStrictEqual(['TEST', 'TEST', 'TEST', 'TEST'])
 
         mockedReadingsResponse.mockImplementation(()=>(mockedSensorData[1]))
-        await pollServerForNewReadings(7)
+        await pollServerForNewReadings({take: 3})
         expect(fetchedSensorData.value[0].temp).toStrictEqual([35, 12, 10])
     })
 })
+
+/**The point of this test is to be sure that the second batch (and consequently subsequent ones) pick up where the last 
+ * one ended - the first cursor index of the second batch has to be adjacent to the last cursor of the first batch
+ */
+// describe('first and subsequent batches continuity', async()=>{
+//     test('batches next to each other', ()=>{
+//         //dont think theres need to mock any endpoints - im just reading from the DB
+
+//         //Take the first batch specifying the cursor
+
+//         //Take the second batch, cursor value is the last index of the first batch (and skip one)
+
+//         //Take a section of the data starting from the first cursor of first batch 
+//         //and ending with the last cursor of the second
+//     })
+// })

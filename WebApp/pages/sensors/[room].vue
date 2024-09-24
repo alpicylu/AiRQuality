@@ -6,7 +6,7 @@
 
         <div class="flex-initial grid grid-cols-9 grid-rows-1">
             <div class="row-start-1 col-start-2 row-span-1 col-span-4 flex justify-center items-center">
-                <h1>{{ fetchedSensorData.at(0)?.room }} (ID: {{ fetchedSensorData.at(0)?.iqrfId }})</h1>
+                <h1>{{ fetchedSensorData.at(0)?.room }} (ID: {{ fetchedSensorData.at(0)?.iqrfId }}) {{ dateRangeToDisplay }}</h1>
             </div>
             <div class="row-start-1 col-start-6 row-span-1 col-span-4 flex justify-around items-center basis-1/2 ">
                 <h2>Now</h2>
@@ -147,6 +147,8 @@ const nDataPointsOnChart = ref(24)
 const dateA = ref<Date|undefined>(undefined)
 const dateB = ref<Date|undefined>(undefined)
 
+const customRangeFlag = ref<boolean>(false)
+
 const sensorIqrfID = computed(()=> {
     return fetchedSensorData.value.at(0)?.iqrfId
 })
@@ -180,17 +182,22 @@ async function buttonTestFunction(){
         showToastPickDateRange()
         return
     }
-    await useFetch(`/api/sensors/${sensorIqrfID.value}/readings?&dateA=${dateA.value}&dateB=${dateB.value}`)
-        .then(res => {
-            if (res.data.value !== null) return parseSensorReadingToCSV(res.data.value) 
-            throw new Error("Fetch returned null - cannot parse to CSV")
-        })
-        .then(res => {
-            const blob = new Blob([res], { type: 'text/csv' })
-            const filenameFromDate = `${new Date().toISOString().slice(0, -5).replace(/:/g, "-")}Z`
-            downloadBlob(blob, filenameFromDate)
-        })
-        .catch(console.error)
+    await useFetch(`/api/sensors/${sensorIqrfID.value}/readings`, {
+        query: {
+            dateA: dateA.value.toString(),
+            dateB: dateB.value.toString()
+        }
+    })
+    .then(res => {
+        if (res.data.value !== null) return parseSensorReadingToCSV(res.data.value) 
+        throw new Error("Fetch returned null - cannot parse to CSV")
+    })
+    .then(res => {
+        const blob = new Blob([res], { type: 'text/csv' })
+        const filenameFromDate = `${new Date().toISOString().slice(0, -5).replace(/:/g, "-")}Z`
+        downloadBlob(blob, filenameFromDate)
+    })
+    .catch(console.error)
 } 
 
 function downloadBlob(blob: Blob, filename: string) {
@@ -216,16 +223,19 @@ function downloadBlob(blob: Blob, filename: string) {
 }
 
 async function getBatchAndFormat(){
-    await getFirstBatchSensorData(nDataPointsOnChart.value, roomNumber).catch(console.error)
+    // await getFirstBatchSensorData(nDataPointsOnChart.value, roomNumber).catch(console.error)
+    await getFirstBatchSensorData({take: nDataPointsOnChart.value}, {room: roomNumber})
     const format = getFormatBasedOnDateDiff(fetchedSensorData.value.at(0)?.time.at(0), fetchedSensorData.value.at(0)?.time.at(-1))
 
     chartTime.value = formatDates(fetchedSensorData.value.at(0)?.time ?? Array<string>(), format)
-    if (pollServerInterval === null) pollServerInterval = setInterval(() => {pollServerForNewReadings(nDataPointsOnChart.value)}, msClientServerPollDelay) 
+    // if (pollServerInterval === null) pollServerInterval = setInterval(() => {pollServerForNewReadings(nDataPointsOnChart.value)}, msClientServerPollDelay)
+    if (pollServerInterval === null) pollServerInterval = setInterval(() => {pollServerForNewReadings( {take: nDataPointsOnChart.value} )}, msClientServerPollDelay)  
 
     /**Switch to "live feed" */
     tempReadings = computed(()=>fetchedSensorData.value.at(0)?.temp ?? Array<number>())
     rehuReadings = computed(()=>fetchedSensorData.value.at(0)?.rehu ?? Array<number>())
     co2cReadings = computed(()=>fetchedSensorData.value.at(0)?.co2c ?? Array<number>())
+    customRangeFlag.value = false
 }
 /**Run this function as soon as the renderer reaches this line (i dont think this would fly in SSR)*/
 getBatchAndFormat()
@@ -245,7 +255,12 @@ async function getReadingsFromDateToDate() {
     pollServerInterval = null
 
     //TODO: check if this works
-    const readings = await $fetch<SingleSensorReadingsType>(`/api/sensors/${sensorIqrfID.value}/readings?dateA=${dateA.value}&dateB=${dateB.value}`)
+    const readings = await $fetch<SingleSensorReadingsType>(`/api/sensors/${sensorIqrfID.value}/readings`, {
+        query: {
+            dateA: dateA.value.toString(),
+            dateB: dateB.value.toString()
+        }
+    })
         .then(res => res)
         .catch(err => console.log(err))
 
@@ -275,29 +290,31 @@ async function getReadingsFromDateToDate() {
     co2cReadings = readings.co2c
 
     chartTime.value = formatDates(readings.time, getFormatBasedOnDateDiff(readings.time.at(0), readings.time.at(-1)))
+    customRangeFlag.value = true
 }
 
 var pollServerInterval: null|NodeJS.Timeout = setInterval(async () => {
-    await pollServerForNewReadings(nDataPointsOnChart.value)
+    // await pollServerForNewReadings(nDataPointsOnChart.value)
+    await pollServerForNewReadings({take: nDataPointsOnChart.value})
     //update x axis according to new data
-    chartTime.value = formatDates(fetchedSensorData.value.at(0)?.time ?? Array<string>(), 'hh:mm')
+    chartTime.value = formatDates(
+        fetchedSensorData.value.at(0)?.time ?? Array<string>(),
+        getFormatBasedOnDateDiff(fetchedSensorData.value.at(0)?.time.at(0), fetchedSensorData.value.at(0)?.time.at(-1)))
+        //the above wierd double-indexing comes from the fact, that fSD is always an array, where each element represents
+        //a single sensor. Since in this view we only have 1 sensor, we can safely always index it by the 0th element.
 }, msClientServerPollDelay)
 
-/**This watcher may seem a bit redundant - why not just pass it into the chart components? it would 
- * update them automatically after all. 
- * Thing is, the charts kinda have two sources - the 'clean' data fetched from the database, and decimated data
- * that represents readings from date A to date B. So whenever i want to display this kind of data, i need to somehow
- * switch the value of the variable the charts are reading from and this is the best way i found.
- * watchEffect evaluates eagerly, watch lazily. Here i need eagerness, otherwise charts will start out blank
- */
-// watchEffect(()=>{
-//     console.log("watchEffect ran")
-//     chartDataReadings.value.id = fetchedSensorData.value.at(0)?.id ?? Array<string>()
-//     chartDataReadings.value.temp = fetchedSensorData.value.at(0)?.temp ?? Array<number>()
-//     chartDataReadings.value.rehu = fetchedSensorData.value.at(0)?.rehu ?? Array<number>()
-//     chartDataReadings.value.co2c = fetchedSensorData.value.at(0)?.co2c ?? Array<number>()
-//     debugger
-// })
+const dateRangeToDisplay = computed(()=>{
+    const earliestReading = fetchedSensorData.value.at(0)?.time.at(0)
+    const today = new Date().toISOString()
+    if (customRangeFlag.value) return 'Custom Range'
+    if (!earliestReading || !today) return ''
+    else if (calcDateDiff(earliestReading, today) <=1) return 'Today'
+    else {
+        const [dateAFormatted, dateBformatted] = formatDates([earliestReading, fetchedSensorData.value.at(0)?.time.at(-1)!], 'dd.MM.yy')
+        return `${dateAFormatted} - ${dateBformatted}` 
+    }
+})
 
 /* https://stackoverflow.com/questions/2809688/directory-chooser-in-html-page */
 

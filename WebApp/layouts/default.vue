@@ -5,13 +5,12 @@
 <!-- h-auto + min-h-screen is huge here, otherwise i get a background that does not cover the whole page in some cases -->
 <div class="flex flex-col items-center min-h-screen w-full">
 
-    <header class="flex-initial w-full my-4 border-b border-b-ext-gray-3">
-        <nav class="flex justify-evenly items-start m-2">
-            <NuxtLink class="justify-self-start">ICON_PH</NuxtLink>
-            <NuxtLink to="/" >Home</NuxtLink>
-            <NuxtLink to="/displayTv">TV</NuxtLink>
-            <NuxtLink class="opacity-50">Log In</NuxtLink>
-            <NuxtLink class="opacity-50">About</NuxtLink>
+    <header class="flex-initial w-full  border-b border-b-ext-gray-3">
+        <nav class="flex items-center m-2 h-16">
+            <img src="~/public/TFT-przezroczyste.png" alt="TFT logo"
+                class="flex-initial grow-[1] object-scale-down max-h-full max-w-full">
+            <NuxtLink to="/" class="flex flex-1 justify-center grow-[1]">Home</NuxtLink>
+            <NuxtLink to="/displayTv" class="flex flex-1 justify-center grow-[1]">TV</NuxtLink>
         </nav>
     </header>
 
@@ -36,5 +35,7 @@
         width: 100%
     }
 }
+
+
 
 </style>

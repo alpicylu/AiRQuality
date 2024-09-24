@@ -33,7 +33,8 @@ const readingToDisplay = ref<DisplayType>(DisplayType.Temp)
 const nDataPointsOnChart = ref<number>(15) 
 
 const {iqrfIdSensorList, fetchedSensorData, getFirstBatchSensorData, pollServerForNewReadings} = useGetSensorData()
-getFirstBatchSensorData(nDataPointsOnChart.value).catch(console.error)
+// getFirstBatchSensorData(nDataPointsOnChart.value).catch(console.error)
+getFirstBatchSensorData({take: nDataPointsOnChart.value}).catch(console.error)
 
 //This is just to test adding new readings and popping old ones 
 function pushFakeSensorReadings(sensor: SingleSensorReadingsType) {
@@ -75,8 +76,8 @@ const changeReadingToDisplayInterval = setInterval(() => {
 }, 1000*10)
 
 const x = setInterval(() => {
-    // getSmallReadingBatch()
-    pollServerForNewReadings(nDataPointsOnChart.value)
+    // pollServerForNewReadings(nDataPointsOnChart.value)
+    pollServerForNewReadings({take: nDataPointsOnChart.value})
 }, msClientServerPollDelay)
 
 
